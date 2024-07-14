@@ -18,19 +18,19 @@ base Template: [dxxxxy/1.8.9ForgeTemplate](https://github.com/dxxxxy/1.8.9ForgeT
 ## 使用方法
 これら情報はゲーム内コマンド `/bs help` で表示可能です
 
-- `/bs (/lunabinsniper)`
+- `/bs (/lunabinsniper)` <br>
 ベースコマンド
 以下のすべてのコマンドはこのコマンドの後に続く
 
-- `/bs help (/bs info)`
+- `/bs help (/bs info)` <br>
 コマンドの動作をリストアップして表示する
 
-- `/bs target <ItemName>`
+- `/bs target <ItemName>` <br>
 Snipe対象を設定する。
 `<ItemName>` に入る文字は Search Auction で検出可能である必要がある
-例: `/bs target Accessory Enrichment Swapper`
+例: `/bs target Accessory Enrichment Swapper` <br>
 
-- `/bs setMin <Minimum Cost>`
+- `/bs setMin <Minimum Cost>` <br>
 Snipe対象となる最低価格 <br>
 B までの省略をサポートする (例: `259.9k -> 259900`)<br>
 最初に `!` を入れた場合、入力された値 -1 の値を設定する
@@ -38,7 +38,7 @@ B までの省略をサポートする (例: `259.9k -> 259900`)<br>
 40000 といれた場合、40k coin未満のアイテムをスナイプしない <br>
 例: `/bs setMin 100k`
 
-- `/bs setMax <Maximum Cost>`
+- `/bs setMax <Maximum Cost>` <br>
 Snipe対象となる最大価格 <br>
 B までの省略をサポートする (例: `259.9k -> 259900`) <br>
 最初に `!` を入れた場合、入力された値 -1 の値を設定する
@@ -46,11 +46,12 @@ B までの省略をサポートする (例: `259.9k -> 259900`) <br>
 285000 といれた場合、285001coin以上のアイテムをスナイプしない <br>
 例: `/bs setMax 260k`
 
-- `/bs setDelay <delay> <function> <function args>`
+- `/bs setDelay <delay> <function> <function args>` <br>
 Snipeのクールダウンをミリ秒単位で設定する<br>
 (例: `/bs setDelay 1000` -> 1秒のクールダウン)
 `<function>` にはサポートされるクールダウン設定関数の名称を入れる<br>
 現在サポートされている/予定されているものは
+
 <details><summary> ここにリストアップされている </summary>
 
 | 関数名 | 対応バージョン | 使用法 |
@@ -59,17 +60,17 @@ Snipeのクールダウンをミリ秒単位で設定する<br>
 | cycle | v1.0 ~ | `/bs setDelay 350 cycle <delay2> <delay3> <delay4> .. <delay30>` |
 
 ### random
-`/bs setDelay 350 random <rangeMin> <rangeMax>`
+`/bs setDelay 350 random <rangeMin> <rangeMax>` <br>
 設定した値 + ランダム値 のクールダウンというサイクルで実行する
 
 例: `/bs setDelay 350 random -50 150`
 
 ### cycle
-`/bs setDelay 350 cycle <delay2> <delay3> ... <delay30>`
+`/bs setDelay 350 cycle <delay2> <delay3> ... <delay30>` <br>
 設定した delay2, delay3, ... 
 に基づきそれらを順番にクールダウンとして設定し実行する
 
-`<delay2>` までは必要だが、それ以降は任意
+`<delay2>` までは必要だが、それ以降は任意<br>
 `<delay30>` まで設定可能
 
 例: `/bs setDelay 350 cycle 500 320 280`
@@ -80,11 +81,11 @@ Snipeのクールダウンをミリ秒単位で設定する<br>
 `100 ~ 6000` の間に収束する
 例: `/bs setDelay 350`
 
-- `/bs enableAutoBack`
+- `/bs enableAutoBack` <br>
 server reboot などで hub またはロビーに戻された際に
 Private Island に自動的に戻る
 
-- `/bs setRarity <anyRarity>`
+- `/bs setRarity <anyRarity>` <br>
 スナイプ対象のレアリティを設定する<br>
 サポートする値は
 ```

@@ -6,6 +6,8 @@ import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.command.CommandException;
 
+import com.luna724.binsniper.commands.CommandMain;
+
 import java.util.ArrayList;
 import java.util.List;
 

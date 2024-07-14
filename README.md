@@ -31,28 +31,25 @@ Snipe対象を設定する。
 例: `/bs target Accessory Enrichment Swapper`
 
 - `/bs setMin <Minimum Cost>`
-Snipe対象となる最低価格
-B までの省略をサポートする (例: `259.9k -> 259900`)
+Snipe対象となる最低価格 <br>
+B までの省略をサポートする (例: `259.9k -> 259900`)<br>
 最初に `!` を入れた場合、入力された値 -1 の値を設定する
-(例: `!260k -> 259999`)
-
-40000 といれた場合、40k coin未満のアイテムをスナイプしない
+(例: `!260k -> 259999`) <br>
+40000 といれた場合、40k coin未満のアイテムをスナイプしない <br>
 例: `/bs setMin 100k`
 
 - `/bs setMax <Maximum Cost>`
-Snipe対象となる最大価格
-B までの省略をサポートする (例: `259.9k -> 259900`)
+Snipe対象となる最大価格 <br>
+B までの省略をサポートする (例: `259.9k -> 259900`) <br>
 最初に `!` を入れた場合、入力された値 -1 の値を設定する
-(例: `!260k -> 259999`)
-
-285000 といれた場合、285001coin以上のアイテムをスナイプしない
+(例: `!260k -> 259999`) <br>
+285000 といれた場合、285001coin以上のアイテムをスナイプしない <br>
 例: `/bs setMax 260k`
 
 - `/bs setDelay <delay> <function> <function args>`
-Snipeのクールダウンをミリ秒単位で設定する
+Snipeのクールダウンをミリ秒単位で設定する<br>
 (例: `/bs setDelay 1000` -> 1秒のクールダウン)
-
-`<function>` にはサポートされるクールダウン設定関数の名称を入れる
+`<function>` にはサポートされるクールダウン設定関数の名称を入れる<br>
 現在サポートされている/予定されているものは
 <details><summary> ここにリストアップされている </summary>
 
@@ -78,32 +75,31 @@ Snipeのクールダウンをミリ秒単位で設定する
 例: `/bs setDelay 350 cycle 500 320 280`
 
 </details>
-
-`<function>` 以降の引数は任意
+`<function>` 以降の引数は任意<br>
 100以下の Delay や 6000以上の Delay は強制的に
 `100 ~ 6000` の間に収束する
-
 例: `/bs setDelay 350`
 
-- `/bs enableAutoback`
+- `/bs enableAutoBack`
 server reboot などで hub またはロビーに戻された際に
 Private Island に自動的に戻る
 
 - `/bs setRarity <anyRarity>`
-スナイプ対象のレアリティを設定する
+スナイプ対象のレアリティを設定する<br>
 サポートする値は
+```
 `common`, `uncommon`, `rare`, `epic`, `legendary`,
 `mythic`, `divine`, `special`, `veryspecial`, `auto`
+```
 で
-`auto` の場合 `No Filter` に設定して動作が実行される
-
+`auto` の場合 `No Filter` に設定して動作が実行される <br>
 例: `/bs setRarity auto`
 
 
 ## ライセンス
-この MOD は [`AGPL-3.0`](/LICENSE) にてラインセンスされており
+この MOD は [`AGPL-3.0`](/LICENSE) にてラインセンスされており<br>
 この MOD のフォークは全てオープンソースである必要があります。
 
 また、このMODを通じて起こったいかなる損害については<strong>一切の責任を負いません。</strong>
-(例: BAN, wipe, 間違った購入等)
+<br>(例: BAN, wipe, 間違った購入等)
 

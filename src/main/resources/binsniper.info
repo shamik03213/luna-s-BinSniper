@@ -1,14 +1,14 @@
 [
 {
-  "modid": "binsniper",
-  "name": "Luna's BinSniper",
-  "description": "This BinSniper is not for hypixel.net",
+  "modid": "lbs",
+  "name": "Luna's BS",
+  "description": "Hypixel Skyblock BinSnipe",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",
   "updateUrl": "",
-  "authorList": ["luna724", "GPT-4"],
-  "credits": "The Forge and FML guys, for making this example. dxxxxy for fixing it.",
+  "authorList": ["luna724", "@NotTomochie"],
+  "credits": "by luna724. baseMod presents by. @NotTomochie",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []

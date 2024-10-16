@@ -1,23 +1,10 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
-
-# idea
-out
-*.ipr
-*.iws
-*.iml
-/.idea/*
-!/.idea/artifacts
-
-# gradle
-build
-.gradle
-
-# other
-eclipse
-run
+build/
+.idea/
+.gradle/
+META-INF/
+previous_backup/
+run/
+__pycache__/
+*.pyc
+py/*.txt
+py/*.json

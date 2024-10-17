@@ -36,8 +36,7 @@ public class Util {
 
     public static void init() {
         try {
-            String playerUUID;
-            playerUUID = Wrapper.mc.func_110432_I().func_148256_e().getId().toString();
+            String playerUUID = Wrapper.mc.getSession().getProfile().getId().toString();
             if (!mainFile.exists()) {
                 mainFile.createNewFile();
             }
@@ -46,34 +45,34 @@ public class Util {
             if (!file.exists()) {
                 file.createNewFile();
             }
-            if (!(config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file)).contains(String.valueOf(new StringBuilder().append(playerUUID = Wrapper.mc.func_110432_I().func_148256_e().getId().toString()).append(".Cost")))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Cost")), -1);
+            if (!(config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file)).contains(playerUUID + ".Cost")) {
+                config.set(playerUUID + ".Cost", -1);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Mode"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Mode")), "FASTMODE");
+            if (!(config.contains(playerUUID + ".Mode"))) {
+                config.set(playerUUID + ".Mode", "FASTMODE");
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Delay"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Delay")), 1000L);
+            if (!(config.contains(playerUUID + ".Delay"))) {
+                config.set(playerUUID + ".Delay", 1000L);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Reconnect"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Reconnect")), 0);
+            if (!(config.contains(playerUUID + ".Reconnect"))) {
+                config.set(playerUUID + ".Reconnect", 0);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Name"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Name")), "None");
+            if (!(config.contains(playerUUID + ".Name"))) {
+                config.set(playerUUID + ".Name", "None");
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Category"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Category")), 0);
+            if (!(config.contains(playerUUID + ".Category"))) {
+                config.set(playerUUID + ".Category", 0);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Amount"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Amount")), 0);
+            if (!(config.contains(playerUUID + ".Amount"))) {
+                config.set(playerUUID + ".Amount", 0);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append(".Timeout"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Timeout")), 10000);
+            if (!(config.contains(playerUUID + ".Timeout"))) {
+                config.set(playerUUID + ".Timeout", 10000);
             }
-            if (!(config.contains(String.valueOf(new StringBuilder().append(playerUUID).append("None"))))) {
-                config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Message")), 1);
+            if (!(config.contains(playerUUID + "None"))) {
+                config.set(playerUUID + ".Message", 1);
             }
-            config.set(String.valueOf(new StringBuilder().append(playerUUID).append(".Message")), 0);
+            config.set(playerUUID + ".Message", 0);
             Util.save();
             
         }
@@ -83,9 +82,9 @@ public class Util {
     }
 
     static {
-        mc = Minecraft.func_71410_x();
+        mc = Minecraft.getMinecraft();
         mainFile = new File("config/BinSniper.yml");
-        file = new File(String.valueOf(new StringBuilder().append("config/BinSniper-").append(Wrapper.mc.func_110432_I().func_148256_e().getId().toString()).append(".yml")));
+        file = new File("config/BinSniper-" + Wrapper.mc.getSession().getProfile().getId().toString() + ".yml");
         oldStr = "";
     }
 
@@ -108,7 +107,7 @@ public class Util {
     }
 
     public static void sendAir() {
-        Util.mc.field_71439_g.func_145747_a((IChatComponent)new ChatComponentText(" "));
+        Util.mc.thePlayer.addChatComponentMessage(new ChatComponentText(" "));
     }
 
     public static void saveMain() {
@@ -121,54 +120,39 @@ public class Util {
     }
 
     public static EnumChatFormatting convertColor(String gotString) {
-        String targetString = gotString;
         int compareIdentifier = -2;
-        switch (targetString.hashCode()) {
-            case 1993481707: { // hashCode for "COMMON"
-                if (!targetString.equals("COMMON")) break;
+        switch (gotString) {
+            case "COMMON":
                 compareIdentifier = -1;
                 break;
-            }
-            case 314315204: { // hashCode for "UNCOMMON"
-                if (!targetString.equals("UNCOMMON")) break;
+            case "UNCOMMON":
                 compareIdentifier = 0;
                 break;
-            }
-            case 2507938: { // hashCode for "RARE"
-                if (!targetString.equals("RARE")) break;
+            case "RARE":
                 compareIdentifier = 1;
                 break;
-            }
-            case 2134789: { // hashCode for "EPIC"
-                if (!targetString.equals("EPIC")) break;
+            case "EPIC":
                 compareIdentifier = 2;
                 break;
-            }
-            case 705031963: { // hashCode for "LEGENDARY"
-                if (!targetString.equals("LEGENDARY")) break;
+            case "LEGENDARY":
                 compareIdentifier = 3;
                 break;
-            }
-            case -2005755334: { // hashCode for "MYTHIC"
-                if (!targetString.equals("MYTHIC")) break;
+            case "MYTHIC":
                 compareIdentifier = 4;
                 break;
-            }
-            case 2016833967: { // hashCode for "DIVINE"
-                if (!targetString.equals("DIVINE")) break;
+            case "DIVINE":
                 compareIdentifier = 5;
                 break;
-            }
-            case -1290482535: { // hashCode for "SPECIAL"
-                if (!targetString.equals("SPECIAL")) break;
+            case "SPECIAL":
                 compareIdentifier = 6;
                 break;
-            }
-            case -1035533680: { // hashCode for "VERY_SPECIAL"
-                if (!targetString.equals("VERY_SPECIAL")) break;
+            case "VERY_SPECIAL":
                 compareIdentifier = 7;
                 break;
-            }
+            case "ULTIMATE":
+                compareIdentifier = 8;
+                break;
+
         }
 
         switch (compareIdentifier) {
@@ -197,23 +181,28 @@ public class Util {
             case 7: {
                 return EnumChatFormatting.RED;
             }
+            case 8: {
+                return EnumChatFormatting.DARK_RED;
+            }
 
             case -2: {
-                throw new IllegalArgumentException(); // 何にも当てはまらなかった場合。今後はログエラーにしてクラッシュしないように
+                // 例外を出さずにエラーログを出力
+                Exception exception = new IllegalArgumentException("Invalid rarity: " + gotString);
+                exception.printStackTrace();  // スタックトレースを出力
+                break;
             }
         }
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("compareIdentifier Initializing Failed! please report this error to Github!");
     }
 
     public static void send(String sendString) {
         if (oldStr.equalsIgnoreCase(sendString)) {
             return;
         }
-        Util.mc.field_71439_g.func_145747_a((IChatComponent)new ChatComponentText(String.valueOf(new StringBuilder().append(EnumChatFormatting.GRAY).append("> ").append(sendString))));
+        Util.mc.thePlayer.addChatComponentMessage(new ChatComponentText(EnumChatFormatting.GRAY + "> " + sendString));
         oldStr = sendString;
     }
 
     public Util() {
-        Util Util;
     }
 }

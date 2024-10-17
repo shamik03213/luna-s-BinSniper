@@ -35,10 +35,10 @@ import net.tomochie.binsniper.commands.CmdBinSniper;
 import net.tomochie.binsniper.logics.BinSnipeLogic;
 import net.tomochie.binsniper.utils.Util;
 
-@Mod(modid="lbs", version="13.0")
+@Mod(modid="lbs", version="1.0")
 public class Main {
     public static final /* synthetic */ String MODID = "lbs";
-    public static final /* synthetic */ String VERSION = "13.0";
+    public static final /* synthetic */ String VERSION = "1.0";
     public static /* synthetic */ KeyBinding keyBinSniper;
     private static /* synthetic */ int isWorld;
 
@@ -67,11 +67,10 @@ public class Main {
     public void init(FMLInitializationEvent event) {
         Util.init();
         keyBinSniper = new KeyBinding("Snipe", 25, "key.categories.binsniper");
-        ClientRegistry.registerKeyBinding((KeyBinding)keyBinSniper);
-        new CmdBinSniper();
-        ClientCommandHandler.instance.func_71560_a((ICommand) new
-        MinecraftForge.EVENT_BUS.register((Object)new Main()));
-        MinecraftForge.EVENT_BUS.register((Object)new BinSnipeLogic());
+        ClientRegistry.registerKeyBinding(keyBinSniper);
+        ClientCommandHandler.instance.registerCommand(new CmdBinSniper());
+        MinecraftForge.EVENT_BUS.register(new Main());
+        MinecraftForge.EVENT_BUS.register(new BinSnipeLogic());
     }
 }
 

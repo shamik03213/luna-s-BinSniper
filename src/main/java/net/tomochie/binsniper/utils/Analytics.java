@@ -39,7 +39,6 @@ public class Analytics {
     }
 
     public static String setJsonObj(String content, String username, String avatarUrl) {
-        // maybe.. NOT needed function?
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("content", content);

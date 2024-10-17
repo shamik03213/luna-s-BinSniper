@@ -21,12 +21,7 @@
  */
 package net.tomochie.binsniper.logics;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.text.NumberFormat;
-import java.util.Base64;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -53,7 +48,6 @@ import org.lwjgl.input.Keyboard;
 
 public class BinSnipeLogic {
     private /* synthetic */ int loopCount;
-    private static /* synthetic */ String[] theString;
     private /* synthetic */ boolean isError;
     private /* synthetic */ int checkCount;
     private /* synthetic */ boolean isWorldChanged;
@@ -64,22 +58,17 @@ public class BinSnipeLogic {
     private /* synthetic */ int buyed;
     private /* synthetic */ String lastseller;
     private /* synthetic */ long timer;
-    private static /* synthetic */ int[] theInteger;
 
-    private static boolean lllllIIIIIlIl(int n) {
-        return n > 0;
-    }
 
     public BinSnipeLogic() {
-        BinSnipeLogic binSnipeLogic;
-        binSnipeLogic.timer = System.currentTimeMillis();
-        binSnipeLogic.currentStep = 0;
-        binSnipeLogic.checkCount = 0;
-        binSnipeLogic.loopCount = 0;
-        binSnipeLogic.buyed = 0;
-        binSnipeLogic.lastseller = "None";
-        binSnipeLogic.isWorldChanged = (0 != 0);
-        binSnipeLogic.isError = (0 != 0);
+        this.timer = System.currentTimeMillis();
+        this.currentStep = 0;
+        this.checkCount = 0;
+        this.loopCount = 0;
+        this.buyed = 0;
+        this.lastseller = "None";
+        this.isWorldChanged = false;
+        this.isError = false;
         String[] reforgeStrings = new String[85];
         reforgeStrings[0] = "Gentle";
         reforgeStrings[1] = "Odd";
@@ -166,7 +155,7 @@ public class BinSnipeLogic {
         reforgeStrings[82] = "Mithraic";
         reforgeStrings[83] = "Auspicious";
         reforgeStrings[84] = "Testing";
-        binSnipeLogic.reforges = reforgeStrings;
+        this.reforges = reforgeStrings;
     }
 
     private void clickSlot(int windowSlot1, int windowSlot2) {
@@ -175,22 +164,17 @@ public class BinSnipeLogic {
         Minecraft.getMinecraft().playerController.windowClick(player.openContainer.windowId, windowSlot1, windowSlot2, 0, player);
     }
 
-    private static boolean lllllIIIIIIlI(int n) {
-        return n < 0;
-    }
-
     @SubscribeEvent
     public void onKey(GuiScreenEvent.KeyboardInputEvent event) {
-        BinSnipeLogic binSnipeLogic;
         String playerId = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
         if (Keyboard.isKeyDown((int)Wrapper.mc.gameSettings.keyBindSneak.getKeyCode()) && Util.config().getBoolean(playerId + ".Active")) {
             //有効時、シフトしたら止める
-            binSnipeLogic.stopSnipe();
+            this.stopSnipe();
             return;
         }
         if (Keyboard.isKeyDown((int) 1) && Util.config().getBoolean(playerId + ".Active")) {
             // BSが有効時、もう一度キーを押されたら止める
-            binSnipeLogic.stopSnipe();
+            this.stopSnipe();
             return;
         }
         if (!Keyboard.isKeyDown((int)Main.keyBinSniper.getKeyCode())) {
@@ -214,21 +198,21 @@ public class BinSnipeLogic {
             return;
         }
         ContainerChest inventoryContainer = (ContainerChest)Wrapper.mc.thePlayer.inventoryContainer;
-        if (!binSnipeLogic.isAuctionBrowser(inventoryContainer)) {
-            if (binSnipeLogic.isAnvil(inventoryContainer)) {
+        if (!this.isAuctionBrowser(inventoryContainer)) {
+            if (this.isAnvil(inventoryContainer)) {
                 Util.send("§a合成モードの開始");
-                binSnipeLogic.currentStep = -10;
+                this.currentStep = -10;
                 Util.config().set(playerId + ".Active", 1);
                 Util.save();
-                binSnipeLogic.timer = System.currentTimeMillis();
+                this.timer = System.currentTimeMillis();
                 return;
             }
-            if (binSnipeLogic.isPending(inventoryContainer)) {
+            if (this.isPending(inventoryContainer)) {
                 Util.send("§a回収モードの開始");
-                binSnipeLogic.currentStep = -1;
+                this.currentStep = -1;
                 Util.config().set(playerId + ".Active", 1);
                 Util.save();
-                binSnipeLogic.timer = System.currentTimeMillis();
+                this.timer = System.currentTimeMillis();
                 return;
             }
         }
@@ -245,16 +229,15 @@ public class BinSnipeLogic {
         Util.sendAir();
         Util.config().set(playerId + ".Active", 1);
         Util.save();
-        binSnipeLogic.currentStep = 0;
-        binSnipeLogic.checkCount = 0;
-        binSnipeLogic.loopCount = 0;
-        binSnipeLogic.buyed = 0;
-        binSnipeLogic.isWorldChanged = (0 != 0);
-        binSnipeLogic.timer = System.currentTimeMillis();
+        this.currentStep = 0;
+        this.checkCount = 0;
+        this.loopCount = 0;
+        this.buyed = 0;
+        this.isWorldChanged = false;
+        this.timer = System.currentTimeMillis();
     }
 
     private void changePage(ContainerChest containerChest) {
-        BinSnipeLogic binSnipeLogic;
         String playerId = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
         String snipeMode = Util.config().getString(playerId + ".Mode");
         if (!Util.config().getBoolean(playerId + ".Active")) {
@@ -267,58 +250,58 @@ public class BinSnipeLogic {
             return;
         }
         Slot targetSlot = containerChest.getSlot(53);
-        if (!targetSlot.func_75216_d()) { // <- what is this?
+        if (!targetSlot.getHasStack()) {
             return;
         }
         ItemStack itemStack = targetSlot.getStack();
         if (itemStack == null) {
             return;
         }
-        if (!(binSnipeLogic.isBinOnly(containerChest))) {
-            binSnipeLogic.clickSlot(52, 0);
+        if (!(this.isBinOnly(containerChest))) {
+            this.clickSlot(52, 0);
             if (Util.config().getBoolean(playerId + ".Message")) {
                 Util.send("修正中... (検索条件を BIN Only に変更しています)");
             }
             return;
         }
-        if (!binSnipeLogic.isLowest(containerChest)) {
-            binSnipeLogic.clickSlot(50, 0);
+        if (!this.isLowest(containerChest)) {
+            this.clickSlot(50, 0);
             if (Util.config().getBoolean(playerId + ".Message")) {
                 Util.send("修正中... (最低金額から検索できるように変更しています)");
             }
             return;
         }
         if (Util.config().getBoolean(playerId + ".Message")) {
-            Util.send("§b検索中... (" + binSnipeLogic.checkCount + "回目のチェック)");
+            Util.send("§b検索中... (" + this.checkCount + "回目のチェック)");
         }
         if (snipeMode.equals("ALLMODE")) {
-            binSnipeLogic.loopCount += 1;
+            this.loopCount += 1;
             if (Item.getIdFromItem((Item)itemStack.getItem()) != 262) {
                 ItemStack itemStackSlot46 = containerChest.getSlot(46).getStack();
                 if (Item.getIdFromItem((Item)itemStackSlot46.getItem()) != 262) {
-                    boolean isNoFilter = binSnipeLogic.isNoFilter(containerChest);
+                    boolean isNoFilter = this.isNoFilter(containerChest);
                     if (isNoFilter) {
-                        binSnipeLogic.clickSlot(51, 1);
+                        this.clickSlot(51, 1);
                     }
                     else {
-                        binSnipeLogic.clickSlot(51, 0);
+                        this.clickSlot(51, 0);
                     }
                     return;
                 }
-                binSnipeLogic.clickSlot(46, 1);
+                this.clickSlot(46, 1);
                 return;
             }
-            binSnipeLogic.clickSlot(53, 0);
+            this.clickSlot(53, 0);
             return;
         }
         if (snipeMode.equals("FASTMODE")) {
-            binSnipeLogic.loopCount += 1;
-            boolean isNoFilter = binSnipeLogic.isNoFilter(containerChest);
+            this.loopCount += 1;
+            boolean isNoFilter = this.isNoFilter(containerChest);
             if (isNoFilter) {
-                binSnipeLogic.clickSlot(51, 1);
+                this.clickSlot(51, 1);
             }
             else {
-                binSnipeLogic.clickSlot(51, 0);
+                this.clickSlot(51, 0);
             }
         }
     }
@@ -360,7 +343,7 @@ public class BinSnipeLogic {
                     return -1;
                 }
                 int Price = Integer.parseInt(lore);
-                if (BinSnipeLogic.argsNotEqual(itemStack.stackSize, 1)) {
+                if (itemStack.stackSize != 1) {
                     Price /= itemStack.stackSize;
                 }
                 return Price;
@@ -433,10 +416,6 @@ public class BinSnipeLogic {
         isActive = false;
     }
 
-    private static boolean n2arebigorequal(int n, int n2) {
-        return n <= n2;
-    }
-
     private boolean isAnvil(ContainerChest containerChest) {
         if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
             return false;
@@ -490,7 +469,6 @@ public class BinSnipeLogic {
             return;
         }
         if (removeFormatting.startsWith("You purchased")) {
-            BinSnipeLogic binSnipeLogic;
             new Thread(new Runnable(){
                 @Override
                 public void run() {
@@ -503,11 +481,12 @@ public class BinSnipeLogic {
         if (!(removeFormatting.contains("There was an error with the auction house!"))) {
             return;
         }
+        this.isError = true;
     }
 
     private boolean isLowest(ContainerChest containerChest) {
         String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
-        if (!(Util.config().getBoolean(playerId".Active"))) {
+        if (!(Util.config().getBoolean(playerId + ".Active"))) {
             return false;
         }
         if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
@@ -535,43 +514,37 @@ public class BinSnipeLogic {
         return false;
     }
 
-    private boolean isNoFilter(ContainerChest llllllllllllllIlllIIllIIIlllIIIl) {
-        String llllllllllllllIlllIIllIIIlllIIII = Wrapper.mc.func_110432_I().func_148256_e().getId().toString();
-        if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIIlllIIII).append(".Active"))) ? 1 : 0)) {
-            return 0;
+    private boolean isNoFilter(ContainerChest containerChest) {
+        String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
+        if (!(Util.config().getBoolean(playerId + ".Active"))) {
+            return false;
         }
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71462_r instanceof GuiChest)) {
-            return 0;
+        if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
+            return false;
         }
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71439_g.field_71070_bA instanceof ContainerChest)) {
-            return 0;
+        if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+            return false;
         }
-        Slot llllllllllllllIlllIIllIIIllIllll = llllllllllllllIlllIIllIIIlllIIIl.func_75139_a(51);
-        if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIllIllll.func_75216_d() ? 1 : 0)) {
-            return 0;
+        Slot slot = containerChest.getSlot(51);
+        if (!(slot.getHasStack())) {
+            return false;
         }
-        ItemStack llllllllllllllIlllIIllIIIllIlllI = llllllllllllllIlllIIllIIIllIllll.func_75211_c();
-        if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIIllIlllI)) {
-            return 0;
+        ItemStack itemStack = slot.getStack();
+        if (itemStack == null) {
+            return false;
         }
-        NBTTagList llllllllllllllIlllIIllIIIllIllIl = llllllllllllllIlllIIllIIIllIllll.func_75211_c().func_77978_p().func_74775_l("display").func_150295_c("Lore", 8);
-        int llllllllllllllIlllIIllIIIlllIIll = 0;
-        while (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIIlllIIll, llllllllllllllIlllIIllIIIllIllIl.func_74745_c())) {
-            String llllllllllllllIlllIIllIIIlllIlII = llllllllllllllIlllIIllIIIllIllIl.func_150307_f(llllllllllllllIlllIIllIIIlllIIll);
-            if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIIlllIlII.contains("▶ No filter") ? 1 : 0)) {
-                return 1;
+        NBTTagList LoreList = slot.getStack().getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+        int i = 0;
+        while (i < LoreList.tagCount()) {
+            String lore = LoreList.getStringTagAt(i);
+            if (lore.contains("▶ No filter")) {
+                return true;
             }
-            ++llllllllllllllIlllIIllIIIlllIIll;
-            "".length();
-            if (-" ".length() == -" ".length()) continue;
-            return ((0x4D ^ 0x15) & ~(0xD4 ^ 0x8C)) != 0;
+            ++i;
         }
-        return 0;
+        return false;
     }
 
-    private static boolean isObjectAreNull(Object object) {
-        return object == null;
-    }
 
     private void stopSnipe() {
         String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
@@ -580,563 +553,422 @@ public class BinSnipeLogic {
         Util.send("§c動作の停止");
     }
 
-    private static boolean argsNotEqual(int n, int n2) {
-        return n != n2;
-    }
-
-    private static boolean isZero(int n) {
-        return n == 0;
-    }
-
-    private static boolean argsEquals(int n, int n2) {
-        return n == n2;
-    }
-
-    private boolean isAuctionBrowser(ContainerChest llllllllllllllIlllIIllIIIIlIIlII) {
-        int[] llllllllllllllIlllIIllIIIIlIIlIl;
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71462_r instanceof GuiChest)) {
-            return 0;
+    private boolean isAuctionBrowser(ContainerChest containerChest) {
+        if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
+            return false;
         }
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71439_g.field_71070_bA instanceof ContainerChest)) {
-            return 0;
+        if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+            return false;
         }
-        int[] nArray = new int[6];
-        nArray[0] = 0;
-        nArray[1] = 9;
-        nArray[2] = 18;
-        nArray[3] = 27;
-        nArray[4] = 36;
-        nArray[5] = 45;
-        int[] llllllllllllllIlllIIllIIIIlIIIlI = llllllllllllllIlllIIllIIIIlIIlIl = nArray;
-        int llllllllllllllIlllIIllIIIIlIIIIl = llllllllllllllIlllIIllIIIIlIIIlI.length;
-        int llllllllllllllIlllIIllIIIIlIIIII = 0;
-        while (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIIIlIIIII, llllllllllllllIlllIIllIIIIlIIIIl)) {
-            int llllllllllllllIlllIIllIIIIlIlIII = llllllllllllllIlllIIllIIIIlIIIlI[llllllllllllllIlllIIllIIIIlIIIII];
-            ItemStack llllllllllllllIlllIIllIIIIlIlIIl = llllllllllllllIlllIIllIIIIlIIlII.func_75139_a(llllllllllllllIlllIIllIIIIlIlIII).func_75211_c();
-            if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIIIlIlIIl)) {
-                return 0;
+
+        int[] ints = new int[]{0, 9, 18, 27, 36, 45};
+        int theSix = ints.length;
+        int i = 0;
+        while (BinSnipeLogic.n2AreBig(i, 6)) {
+            int ii = ints[i];
+            ItemStack itemStack = containerChest.getSlot(ii).getStack();
+            if (itemStack == null) {
+                return false;
             }
-            if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIII) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§6Weapons") ? 1 : 0)) {
-                return 0;
+            if (ii == 0 && !itemStack.getDisplayName().equalsIgnoreCase("§6Weapons")) {
+                return false;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIIIlIlIII, 9) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§bArmor") ? 1 : 0)) {
-                return 0;
+            if (ii == 9 && !itemStack.getDisplayName().equalsIgnoreCase("§bArmor")) {
+                return false;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIIIlIlIII, 18) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§2Accessories") ? 1 : 0)) {
-                return 0;
+            if (ii == 18 && !itemStack.getDisplayName().equalsIgnoreCase("§2Accessories")) {
+                return false;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIIIlIlIII, 27) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§cConsumables") ? 1 : 0)) {
-                return 0;
+            if (ii == 27 && !itemStack.getDisplayName().equalsIgnoreCase("§cConsumables")) {
+                return false;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIIIlIlIII, 36) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§eBlocks") ? 1 : 0)) {
-                return 0;
+            if (ii == 36 && !itemStack.getDisplayName().equalsIgnoreCase("§eBlocks")) {
+                return false;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIIIlIlIII, 45) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIIIlIlIIl.func_82833_r().equalsIgnoreCase("§dTools & Misc") ? 1 : 0)) {
-                return 0;
+            if (ii == 45 && !itemStack.getDisplayName().equalsIgnoreCase("§dTools & Misc")) {
+                return false;
             }
-            ++llllllllllllllIlllIIllIIIIlIIIII;
-            "".length();
-            if ((0xB3 ^ 0xB7) != " ".length()) continue;
-            return ((0xD1 ^ 0x8C) & ~(0x6C ^ 0x31)) != 0;
+            ++i;
         }
-        return 1;
-    }
-
-    /*n != 0 を返す*/
-    private static boolean isnAreNotZero(int n) {
-
-        return n != 0;
+        return true;
     }
 
     private static boolean n2AreBig(int n, int n2) {
         return n < n2;
     }
 
-    private static int lllllIIIIIIIl(long l, long l2) {
-        return Long.compare(l, l2);
-    }
-
     @SubscribeEvent
     public void onTick(TickEvent.ClientTickEvent clientTickEvent) {
-        BinSnipeLogic llllllllllllllIlllIIllIIllIIlIll;
-        String llllllllllllllIlllIIllIIllIlIIII = Wrapper.mc.func_110432_I().func_148256_e().getId().toString();
-        if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Active"))) ? 1 : 0)) {
+        String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
+        if (!Util.config().getBoolean(playerId + ".Active")) {
             return;
         }
-        if (BinSnipeLogic.lllllIIIIIIlI(BinSnipeLogic.lllllIIIIIIIl(llllllllllllllIlllIIllIIllIIlIll.timer - System.currentTimeMillis(), -Util.config().getLong(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Timeout")))))) {
-            Wrapper.mc.field_71439_g.field_71071_by.func_174886_c((EntityPlayer)Wrapper.mc.field_71439_g);
-            if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Reconnect"))) ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+        if (this.timer - System.currentTimeMillis() < -Util.config().getLong(playerId + ".Timeout")) {
+            Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+            if (!Util.config().getBoolean(playerId + ".Reconnect")) {
+                this.stopSnipe();
                 return;
             }
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = 4;
-            Wrapper.mc.field_71439_g.func_71165_d("/ah");
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-            if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+            this.currentStep = 4;
+            Wrapper.mc.thePlayer.sendChatMessage("/ah");
+            this.timer = System.currentTimeMillis();
+            if (Util.config().getBoolean(playerId + ".Message")) {
                 Util.send("修正中... (動作のタイムアウト オークションの復帰を試みます)");
             }
             return;
         }
-        if (BinSnipeLogic.lllllIIIIIlIl(BinSnipeLogic.lllllIIIIIIIl(llllllllllllllIlllIIllIIllIIlIll.timer - System.currentTimeMillis(), -Util.config().getLong(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Delay")))))) {
+        if (this.timer - System.currentTimeMillis() > -Util.config().getLong(playerId + ".Delay")) {
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -1)) {
-            Wrapper.mc.field_71439_g.func_71165_d("/ah");
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -2;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -1) {
+            Wrapper.mc.thePlayer.sendChatMessage("/ah");
+            this.currentStep = -2;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -2)) {
-            if (BinSnipeLogic.isZero(Wrapper.mc.field_71439_g.field_71070_bA instanceof ContainerChest)) {
-                llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+        if (this.currentStep == -2) {
+            if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+                this.stopSnipe();
                 return;
             }
-            ContainerChest llllllllllllllIlllIIllIIlllIIlIl = (ContainerChest)Wrapper.mc.field_71439_g.field_71070_bA;
-            if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIIlIll.isPending(llllllllllllllIlllIIllIIlllIIlIl) ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(13, 0);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = -3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            ContainerChest containerChest = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
+            if (this.isPending(containerChest)) {
+                this.clickSlot(13, 0);
+                this.currentStep = -3;
+                this.timer = System.currentTimeMillis();
                 return;
             }
-            llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            this.stopSnipe();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -3)) {
-            if (BinSnipeLogic.isZero(Wrapper.mc.field_71439_g.field_71070_bA instanceof ContainerChest)) {
-                llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+        if (this.currentStep == -3) {
+            if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+                this.stopSnipe();
                 return;
             }
-            ContainerChest llllllllllllllIlllIIllIIlllIIIlI = (ContainerChest)Wrapper.mc.field_71439_g.field_71070_bA;
-            int llllllllllllllIlllIIllIIlllIIIll = 0;
-            while (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIlllIIIll, 54)) {
-                ItemStack llllllllllllllIlllIIllIIlllIIlII = llllllllllllllIlllIIllIIlllIIIlI.func_75139_a(llllllllllllllIlllIIllIIlllIIIll).func_75211_c();
-                if (BinSnipeLogic.argsEquals(Item.func_150891_b((Item)llllllllllllllIlllIIllIIlllIIlII.func_77973_b()), 160)) {
-                    "".length();
-                    if (((174 + 69 - 213 + 223 ^ 150 + 101 - 176 + 103) & (0x1B ^ 0x22 ^ (0x78 ^ 0xE) ^ -" ".length())) != 0) {
-                        return;
-                    }
-                } else if (BinSnipeLogic.argsEquals(Item.func_150891_b((Item)llllllllllllllIlllIIllIIlllIIlII.func_77973_b()), 262)) {
-                    "".length();
-                    if ("   ".length() >= (6 + 116 - -45 + 29 ^ 79 + 179 - 107 + 41)) {
-                        return;
-                    }
-                } else {
-                    llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIlllIIIll, 0);
-                    llllllllllllllIlllIIllIIllIIlIll.currentStep = -4;
-                    llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            ContainerChest openContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
+            int i = 0;
+            while (i < 54) {
+                ItemStack itemStack = openContainer.getSlot(i).getStack();
+                if (!(Item.getIdFromItem((Item)itemStack.getItem()) == 160) && !(Item.getIdFromItem((Item)itemStack.getItem()) == 262)) {
+                    this.clickSlot(i, 0);
+                    this.currentStep = -4;
+                    this.timer = System.currentTimeMillis();
                     return;
                 }
-                ++llllllllllllllIlllIIllIIlllIIIll;
-                "".length();
-                if (((0x19 ^ 0x2A ^ (0x41 ^ 0x64)) & (0x9F ^ 0xBD ^ (0x7E ^ 0x4A) ^ -" ".length())) < " ".length()) continue;
-                return;
+                ++i;
             }
-            llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            this.stopSnipe();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -4)) {
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(31, 0);
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -1;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -4) {
+            this.clickSlot(31, 0);
+            this.currentStep = -1;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -10)) {
-            int llllllllllllllIlllIIllIIllIllIlI = 0;
-            while (BinSnipeLogic.n2arebigorequal(llllllllllllllIlllIIllIIllIllIlI, 35)) {
-                ItemStack llllllllllllllIlllIIllIIllIlllIl = Wrapper.mc.field_71439_g.field_71071_by.func_70301_a(llllllllllllllIlllIIllIIllIllIlI);
-                if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIllIlllIl)) {
-                    "".length();
-                    if ("   ".length() == 0) {
-                        return;
-                    }
-                } else if (BinSnipeLogic.argsNotEqual(Item.func_150891_b((Item)llllllllllllllIlllIIllIIllIlllIl.func_77973_b()), 403)) {
-                    "".length();
-                    if (((0x98 ^ 0xA2) & ~(0x20 ^ 0x1A)) > 0) {
-                        return;
-                    }
-                } else if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIllIlllIl.func_82837_s() ? 1 : 0)) {
-                    "".length();
-                    if (((0x8D ^ 0x90 ^ (0x1F ^ 0xA)) & (0x2C ^ 0x5A ^ (0x26 ^ 0x58) ^ -" ".length())) > 0) {
-                        return;
-                    }
-                } else if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIllIlllIl.func_82833_r().contains("Enchanted Book") ? 1 : 0)) {
-                    "".length();
-                    if (((0x25 ^ 0x75) & ~(0x3B ^ 0x6B)) != 0) {
-                        return;
-                    }
-                } else {
-                    NBTTagList llllllllllllllIlllIIllIIllIlllII = llllllllllllllIlllIIllIIllIlllIl.func_77978_p().func_74775_l("display").func_150295_c("Lore", 8);
-                    String llllllllllllllIlllIIllIIllIllIll = EnumChatFormatting.func_110646_a((String)llllllllllllllIlllIIllIIllIlllII.func_150307_f(0));
-                    int llllllllllllllIlllIIllIIllIllllI = 0;
-                    while (BinSnipeLogic.n2arebigorequal(llllllllllllllIlllIIllIIllIllllI, 35)) {
-                        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllllI, llllllllllllllIlllIIllIIllIllIlI)) {
-                            "".length();
-                            if ((0x13 ^ 0x17) < "  ".length()) {
-                                return;
-                            }
-                        } else {
-                            ItemStack llllllllllllllIlllIIllIIlllIIIIl = Wrapper.mc.field_71439_g.field_71071_by.func_70301_a(llllllllllllllIlllIIllIIllIllllI);
-                            if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIlllIIIIl)) {
-                                "".length();
-                                if (((0x94 ^ 0x8D) & ~(0xBD ^ 0xA4)) > (0xA ^ 0xE)) {
-                                    return;
-                                }
-                            } else if (BinSnipeLogic.argsNotEqual(Item.func_150891_b((Item)llllllllllllllIlllIIllIIlllIIIIl.func_77973_b()), 403)) {
-                                "".length();
-                                if (((0xB1 ^ 0x90) & ~(0x38 ^ 0x19)) > 0) {
-                                    return;
-                                }
-                            } else if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIlllIIIIl.func_82837_s() ? 1 : 0)) {
-                                "".length();
-                                if (null != null) {
-                                    return;
-                                }
-                            } else if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIlllIIIIl.func_82833_r().contains("Enchanted Book") ? 1 : 0)) {
-                                "".length();
-                                if (null != null) {
-                                    return;
-                                }
-                            } else {
-                                NBTTagList llllllllllllllIlllIIllIIlllIIIII = llllllllllllllIlllIIllIIlllIIIIl.func_77978_p().func_74775_l("display").func_150295_c("Lore", 8);
-                                String llllllllllllllIlllIIllIIllIlllll = EnumChatFormatting.func_110646_a((String)llllllllllllllIlllIIllIIlllIIIII.func_150307_f(0));
-                                if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIllIll.equalsIgnoreCase(llllllllllllllIlllIIllIIllIlllll) ? 1 : 0)) {
-                                    llllllllllllllIlllIIllIIllIIlIll.slotB = llllllllllllllIlllIIllIIllIllllI;
-                                    llllllllllllllIlllIIllIIllIIlIll.currentStep = -11;
-                                    if (BinSnipeLogic.lllllIIIlllII(llllllllllllllIlllIIllIIllIllIlI, 9)) {
-                                        llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIllIllIlI + 54 - 9, 0);
+        if (this.currentStep == -10) {
+            // エンチャ本の時の処理
+            int i = 0;
+            while (i <= 35) {
+                ItemStack itemStack = Wrapper.mc.thePlayer.inventory.getStackInSlot(i);
+                if (itemStack != null && itemStack.getDisplayName().contains("Enchanted Book") && itemStack.hasDisplayName() && Item.getIdFromItem((Item)itemStack.getItem()) == 403) {
+                    NBTTagList LoreList = itemStack.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+                    String lore = EnumChatFormatting.getTextWithoutFormattingCodes((String)LoreList.getStringTagAt(0));
+                    int i2 = 0;
+                    while (i2 <= 35) {
+                        if (i2 != i) {
+                            ItemStack itemStack2 = Wrapper.mc.thePlayer.inventory.getStackInSlot(i2);
+                            if (itemStack2 != null && itemStack2.getDisplayName().contains("Enchanted Book") && itemStack2.hasDisplayName() && Item.getIdFromItem((Item)itemStack2.getItem()) == 403) {
+                                NBTTagList LoreList2 = itemStack2.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+                                String lore2 = EnumChatFormatting.getTextWithoutFormattingCodes((String)LoreList2.getStringTagAt(0));
+                                if (lore.equalsIgnoreCase(lore2)) {
+                                    this.slotB = i2;
+                                    this.currentStep = -11;
+                                    if (i >= 9) {
+                                        this.clickSlot(i + 45, 0);
                                     }
-                                    if (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIllIllIlI, 9)) {
-                                        llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIllIllIlI + 54 + 27, 0);
+                                    if (i < 9) {
+                                        this.clickSlot(i + 81, 0);
                                     }
-                                    llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+                                    this.timer = System.currentTimeMillis();
                                     return;
                                 }
                             }
                         }
-                        ++llllllllllllllIlllIIllIIllIllllI;
-                        "".length();
-                        if ("   ".length() >= " ".length()) continue;
-                        return;
+                        ++i2;
                     }
                 }
-                ++llllllllllllllIlllIIllIIllIllIlI;
-                "".length();
-                if ("  ".length() != 0) continue;
-                return;
+                ++i;
             }
-            llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            this.stopSnipe();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -11)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -12;
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(29, 0);
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -11) {
+            this.currentStep = -12;
+            this.clickSlot(29, 0);
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -12)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -13;
-            if (BinSnipeLogic.lllllIIIlllII(llllllllllllllIlllIIllIIllIIlIll.slotB, 9)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIllIIlIll.slotB + 54 - 9, 0);
+        if (this.currentStep == -12) {
+            this.currentStep = -13;
+            if (this.slotB >= 9) {
+                this.clickSlot(this.slotB + 45, 0);
             }
-            if (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIllIIlIll.slotB, 9)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIllIIlIll.slotB + 54 + 27, 0);
+            if (this.slotB < 9) {
+                this.clickSlot(this.slotB + 81, 0);
             }
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -13)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -14;
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(33, 0);
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -13) {
+            this.currentStep = -14;
+            this.clickSlot(33, 0);
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -14)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -15;
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(22, 0);
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -14) {
+            this.currentStep = -15;
+            this.clickSlot(22, 0);
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -15)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -16;
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(22, 0);
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -15) {
+            this.currentStep = -16;
+            this.clickSlot(22, 0);
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, -16)) {
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = -10;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == -16) {
+            this.currentStep = -10;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 100)) {
-            if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIIlIll.isError ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.buyed -= 1;
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.isError = 0;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+        if (this.currentStep == 100) {
+            if (this.isError) {
+                this.buyed -= 1;
+                this.currentStep = 3;
+                this.isError = false;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("修正中... (落札したアイテムにエラーが発生 カウントを取り消しました)");
                 }
-                return;
             }
-            if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIllIIlIll.isError ? 1 : 0)) {
-                int llllllllllllllIlllIIllIIllIllIIl = Util.config().getInt(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Amount")));
-                if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIIl, llllllllllllllIlllIIllIIllIIlIll.buyed)) {
-                    llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            else {
+                int purchaseAmount = Util.config().getInt(playerId + ".Amount");
+                if (purchaseAmount == this.buyed) {
+                    this.stopSnipe();
                     return;
                 }
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.isError = 0;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Reconnect"))) ? 1 : 0)) {
-                    llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+                this.currentStep = 3;
+                this.isError = false;
+                this.timer = System.currentTimeMillis();
+                if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
+                    this.stopSnipe();
                 }
+            }
+            return;
+        }
+        if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
+            if (this.isWorldChanged) {
+                this.isWorldChanged = false;
+                this.currentStep = 12345;
+                this.timer = System.currentTimeMillis() + 5000L;
+                return;
+            }
+            if (this.currentStep == 12345) {
+                Wrapper.mc.thePlayer.sendChatMessage("/is");
+                this.currentStep = 3;
+                this.timer = System.currentTimeMillis() + 5000L;
+                return;
+            }
+            if (this.currentStep == 3) {
+                if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
+                    this.stopSnipe();
+                    return;
+                }
+                this.currentStep = 4;
+                Wrapper.mc.thePlayer.sendChatMessage("/ah");
+                this.timer = System.currentTimeMillis();
                 return;
             }
         }
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71462_r instanceof GuiChest)) {
-            if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIIlIll.isWorldChanged ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.isWorldChanged = 0;
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 12345;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis() + 5000L;
-                return;
-            }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 12345)) {
-                Wrapper.mc.field_71439_g.func_71165_d("/is");
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis() + 5000L;
-                return;
-            }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 3)) {
-                if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Reconnect"))) ? 1 : 0)) {
-                    llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
-                    return;
-                }
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 4;
-                Wrapper.mc.field_71439_g.func_71165_d("/ah");
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                return;
-            }
-        }
-        if (BinSnipeLogic.argsEquals(Util.config().getInt(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Cost"))), -1)) {
-            Util.config().set(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Active")), 0);
+        if (Util.config().getInt(playerId + ".Cost") == -1) {
+            Util.config().set(playerId + ".Active", 0);
             Util.save();
             Util.send("§c金額を /binsniper coin 10000 などで設定して下さい");
-            llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            this.stopSnipe();
             return;
         }
-        if (BinSnipeLogic.isZero(Wrapper.mc.field_71439_g.field_71070_bA instanceof ContainerChest)) {
+        if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
             return;
         }
-        ContainerChest llllllllllllllIlllIIllIIllIIllll = (ContainerChest)Wrapper.mc.field_71439_g.field_71070_bA;
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 4)) {
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(11, 0);
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = 5;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        ContainerChest openContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
+        if (this.currentStep == 4) {
+            this.clickSlot(11, 0);
+            this.currentStep = 5;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 5)) {
-            if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIIlIll.isAuctionBrowser(llllllllllllllIlllIIllIIllIIllll) ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 6;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+        if (this.currentStep == 5) {
+            if (this.isAuctionBrowser(openContainer)) {
+                this.currentStep = 6;
+                this.timer = System.currentTimeMillis();
                 return;
             }
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 6)) {
-            int llllllllllllllIlllIIllIIllIllIII = Util.config().getInt(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Category")));
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 1)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(0, 0);
-                "".length();
-                if (" ".length() > "   ".length()) {
-                    return;
-                }
-            } else if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 2)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(9, 0);
-                "".length();
-                if (((0xD1 ^ 0xB0) & ~(0xE2 ^ 0x83)) != 0) {
-                    return;
-                }
-            } else if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 3)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(18, 0);
-                "".length();
-                if ((0x6A ^ 0x6F) == 0) {
-                    return;
-                }
-            } else if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 4)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(27, 0);
-                "".length();
-                if (null != null) {
-                    return;
-                }
-            } else if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 5)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(36, 0);
-                "".length();
-                if ("   ".length() == 0) {
-                    return;
-                }
-            } else if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIllIII, 6)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(45, 0);
+        if (this.currentStep == 6) {
+            // currentStep 6: カテゴリの移動
+            int categoryType = Util.config().getInt(playerId + ".Category");
+            if (categoryType == 1) {
+                this.clickSlot(0, 0); // Weapons
+            } else if (categoryType == 2) {
+                this.clickSlot(9, 0); // Armors
+            } else if (categoryType == 3) {
+                this.clickSlot(18, 0); // Accessories
+            } else if (categoryType == 4) {
+                this.clickSlot(27, 0); // Consumables
+            } else if (categoryType == 5) {
+                this.clickSlot(36, 0); // Blocks
+            } else if (categoryType == 6) {
+                this.clickSlot(45, 0); // Tools & Misc
             }
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = 0;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            this.currentStep = 0;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 2)) {
-            Slot llllllllllllllIlllIIllIIllIlIlll = llllllllllllllIlllIIllIIllIIllll.func_75139_a(11);
-            if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIllIlIlll)) {
-                Wrapper.mc.field_71439_g.field_71071_by.func_174886_c((EntityPlayer)Wrapper.mc.field_71439_g);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+        if (this.currentStep == 2) {
+            Slot slot = openContainer.getSlot(11);
+            if (slot == null) {
+                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+                this.currentStep = 3;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("§c購入のキャンセル 再検索を開始します...");
                 }
                 return;
             }
-            if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIllIlIlll.func_75211_c())) {
-                Wrapper.mc.field_71439_g.field_71071_by.func_174886_c((EntityPlayer)Wrapper.mc.field_71439_g);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+            if (slot.getStack() == null) {
+                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+                this.currentStep = 3;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("§c購入のキャンセル 再検索を開始します...");
                 }
                 return;
             }
-            if (BinSnipeLogic.isObjectAreNull(llllllllllllllIlllIIllIIllIlIlll.func_75211_c().func_77973_b())) {
-                Wrapper.mc.field_71439_g.field_71071_by.func_174886_c((EntityPlayer)Wrapper.mc.field_71439_g);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+            if (slot.getStack().getItem() == null) {
+                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+                this.currentStep = 3;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("§c購入のキャンセル 再検索を開始します...");
                 }
                 return;
             }
-            if (BinSnipeLogic.argsNotEqual(Item.func_150891_b((Item)llllllllllllllIlllIIllIIllIIllll.func_75139_a(11).func_75211_c().func_77973_b()), 159)) {
-                Wrapper.mc.field_71439_g.field_71071_by.func_174886_c((EntityPlayer)Wrapper.mc.field_71439_g);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 3;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+            if (Item.getIdFromItem((Item)openContainer.getSlot(11).getStack().getItem()) != 159) {
+                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+                this.currentStep = 3;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("§c購入のキャンセル 再検索を開始します...");
                 }
                 return;
             }
-            int llllllllllllllIlllIIllIIllIlIllI = Util.config().getInt(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Amount")));
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(11, 0);
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = 100;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-            llllllllllllllIlllIIllIIllIIlIll.buyed += 1;
-            if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+            int purchaseAmount = Util.config().getInt(playerId + ".Amount");
+            this.clickSlot(11, 0);
+            this.currentStep = 100;
+            this.timer = System.currentTimeMillis();
+            this.buyed += 1;
+            if (Util.config().getBoolean(playerId + ".Message")) {
                 Util.sendAir();
                 Util.send("§a§lスナイプを実行しました");
-                Util.send(String.valueOf(new StringBuilder().append("§7- チェック回数: ").append(llllllllllllllIlllIIllIIllIIlIll.checkCount)));
-                Util.send(String.valueOf(new StringBuilder().append("§7- 更新回数: ").append(llllllllllllllIlllIIllIIllIIlIll.loopCount)));
-                if (BinSnipeLogic.argsNotEqual(llllllllllllllIlllIIllIIllIIlIll.buyed, llllllllllllllIlllIIllIIllIlIllI) && BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIlIllI)) {
-                    Util.send(String.valueOf(new StringBuilder().append("§7- 目標購入数まで: (").append(llllllllllllllIlllIIllIIllIIlIll.buyed).append("/").append(llllllllllllllIlllIIllIIllIlIllI).append(")")));
+                Util.send("§7- チェック回数: " + this.checkCount);
+                Util.send("§7- 更新回数: " + this.loopCount);
+                if (this.buyed != purchaseAmount && purchaseAmount != 0) {
+                    Util.send("§7- 目標購入数まで: (" + this.buyed + "/" + purchaseAmount + ")");
                 }
-                if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.buyed, llllllllllllllIlllIIllIIllIlIllI) && BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIlIllI)) {
-                    Util.send(String.valueOf(new StringBuilder().append("§7- 目標購入数まで: §a(").append(llllllllllllllIlllIIllIIllIIlIll.buyed).append("/").append(llllllllllllllIlllIIllIIllIlIllI).append(")")));
+                if (this.buyed == purchaseAmount && purchaseAmount != 0) {
+                    Util.send("§7- 目標購入数まで: §a(" + this.buyed + "/" + purchaseAmount + ")");
                 }
                 Util.sendAir();
             }
-            llllllllllllllIlllIIllIIllIIlIll.checkCount = 0;
-            llllllllllllllIlllIIllIIllIIlIll.loopCount = 0;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-            if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Reconnect"))) ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.stopSnipe();
+            this.checkCount = 0;
+            this.loopCount = 0;
+            this.timer = System.currentTimeMillis();
+            if (!Util.config().getBoolean(playerId + ".Reconnect")) {
+                this.stopSnipe();
             }
             return;
         }
-        if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIlIll.currentStep, 1)) {
-            if (BinSnipeLogic.argsNotEqual(Item.func_150891_b((Item)llllllllllllllIlllIIllIIllIIllll.func_75139_a(31).func_75211_c().func_77973_b()), 371)) {
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(49, 0);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 0;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
-                if (BinSnipeLogic.isnAreNotZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Message"))) ? 1 : 0)) {
+        if (this.currentStep == 1) {
+            if (Item.getIdFromItem((Item)openContainer.getSlot(31).getStack().getItem()) != 371) {
+                this.clickSlot(49, 0);
+                this.currentStep = 0;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
                     Util.send("§c購入のキャンセル 再検索を開始します...");
                 }
                 return;
             }
-            llllllllllllllIlllIIllIIllIIlIll.clickSlot(31, 0);
-            llllllllllllllIlllIIllIIllIIlIll.currentStep = 2;
-            llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            this.clickSlot(31, 0);
+            this.currentStep = 2;
+            this.timer = System.currentTimeMillis();
             return;
         }
-        if (BinSnipeLogic.isnAreNotZero(llllllllllllllIlllIIllIIllIIlIll.currentStep)) {
+        if (this.currentStep != 0) {
             return;
         }
-        if (BinSnipeLogic.isZero(llllllllllllllIlllIIllIIllIIlIll.isAuctionBrowser(llllllllllllllIlllIIllIIllIIllll) ? 1 : 0)) {
+        if (!this.isAuctionBrowser(openContainer)) {
             return;
         }
-        int llllllllllllllIlllIIllIIllIIlllI = 11;
-        int llllllllllllllIlllIIllIIllIIllIl = 0;
-        int llllllllllllllIlllIIllIIllIIllII = 1;
-        int llllllllllllllIlllIIllIIllIlIIll = 0;
-        while (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIllIIllIlIIll, 24)) {
-            ItemStack llllllllllllllIlllIIllIIllIlIlIl;
-            int llllllllllllllIlllIIllIIllIlIlII;
-            if (BinSnipeLogic.argsNotEqual(llllllllllllllIlllIIllIIllIlIlII = llllllllllllllIlllIIllIIllIIlIll.getCost(llllllllllllllIlllIIllIIllIlIlIl = llllllllllllllIlllIIllIIllIIllll.func_75139_a(llllllllllllllIlllIIllIIllIIlllI + ++llllllllllllllIlllIIllIIllIIllIl - 1).func_75211_c()), -1)) {
-                llllllllllllllIlllIIllIIllIIlIll.checkCount += 1;
+        int clickTarget1 = 11;
+        int clickTarget2 = 0;
+        int rowCounter = 1;
+        int i = 0;
+        while (BinSnipeLogic.n2AreBig(i, 24)) {
+            ItemStack itemStack = openContainer.getSlot(clickTarget1 + ++clickTarget2 - 1).getStack();
+            int cost = this.getCost(itemStack);
+            if (cost != -1) {
+                this.checkCount += 1;
             }
-            if (BinSnipeLogic.n2arebigorequal(llllllllllllllIlllIIllIIllIlIlII, Util.config().getInt(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIIllIlIIII).append(".Cost")))) && BinSnipeLogic.argsNotEqual(llllllllllllllIlllIIllIIllIlIlII, -1) && BinSnipeLogic.isZero(llllllllllllllIlllIIllIIllIIlIll.lastseller.equals(llllllllllllllIlllIIllIIllIIlIll.getLastSeller(llllllllllllllIlllIIllIIllIlIlIl)) ? 1 : 0)) {
-                llllllllllllllIlllIIllIIllIIlIll.lastseller = llllllllllllllIlllIIllIIllIIlIll.getLastSeller(llllllllllllllIlllIIllIIllIlIlIl);
-                llllllllllllllIlllIIllIIllIIlIll.clickSlot(llllllllllllllIlllIIllIIllIIlllI + llllllllllllllIlllIIllIIllIIllIl - 1, 0);
-                llllllllllllllIlllIIllIIllIIlIll.currentStep = 1;
-                llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+
+            if (cost <= Util.config().getInt(playerId + ".Cost") && cost != -1 && !this.lastseller.equals(this.getLastSeller(itemStack))) {
+                // ひとつ前のmcidしか保存しないから、三つ以上スナイプ対象があるとループする
+                // 対処法 -> getLastSeller を Array とし、2つまで処理する。
+                // 高度な対処法 -> アイテムNBTを用いり、Dupeでない限り同一セッションで同じアイテムを購入しようとしない
+                this.lastseller = this.getLastSeller(itemStack);
+                this.clickSlot(clickTarget1 + clickTarget2 - 1, 0);
+                this.currentStep = 1;
+                this.timer = System.currentTimeMillis();
                 return;
             }
-            if (BinSnipeLogic.argsEquals(llllllllllllllIlllIIllIIllIIllIl, 6)) {
-                llllllllllllllIlllIIllIIllIIllIl = 0;
-                llllllllllllllIlllIIllIIllIIlllI += 9;
-                if (BinSnipeLogic.argsEquals(++llllllllllllllIlllIIllIIllIIllII, 5)) {
-                    llllllllllllllIlllIIllIIllIIlIll.changePage(llllllllllllllIlllIIllIIllIIllll);
-                    llllllllllllllIlllIIllIIllIIlIll.timer = System.currentTimeMillis();
+            if (clickTarget2 == 6) {
+                clickTarget2 = 0;
+                clickTarget1 += 9;
+                if (++rowCounter == 5) {
+                    this.changePage(openContainer);
+                    this.timer = System.currentTimeMillis();
                 }
             }
-            ++llllllllllllllIlllIIllIIllIlIIll;
-            "".length();
-            if (" ".length() == " ".length()) continue;
-            return;
+            ++i;
         }
-    }
-
-    private static boolean lllllIIIlllII(int n, int n2) {
-        return n >= n2;
-    }
-
-    private static String DecodeBase64(String llllllllllllllIlllIIlIllllllllII, String llllllllllllllIlllIIlIlllllllIll) {
-        llllllllllllllIlllIIlIllllllllII = new String(Base64.getDecoder().decode(llllllllllllllIlllIIlIllllllllII.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
-        StringBuilder llllllllllllllIlllIIlIllllllllll = new StringBuilder();
-        char[] llllllllllllllIlllIIlIlllllllllI = llllllllllllllIlllIIlIlllllllIll.toCharArray();
-        int llllllllllllllIlllIIlIllllllllIl = 0;
-        char[] llllllllllllllIlllIIlIllllllIlll = llllllllllllllIlllIIlIllllllllII.toCharArray();
-        int llllllllllllllIlllIIlIllllllIllI = llllllllllllllIlllIIlIllllllIlll.length;
-        int llllllllllllllIlllIIlIllllllIlIl = 0;
-        while (BinSnipeLogic.n2AreBig(llllllllllllllIlllIIlIllllllIlIl, llllllllllllllIlllIIlIllllllIllI)) {
-            char llllllllllllllIlllIIllIIIIIIIIlI = llllllllllllllIlllIIlIllllllIlll[llllllllllllllIlllIIlIllllllIlIl];
-            llllllllllllllIlllIIlIllllllllll.append((char)(llllllllllllllIlllIIllIIIIIIIIlI ^ llllllllllllllIlllIIlIlllllllllI[llllllllllllllIlllIIlIllllllllIl % llllllllllllllIlllIIlIlllllllllI.length]));
-            "".length();
-            ++llllllllllllllIlllIIlIllllllllIl;
-            ++llllllllllllllIlllIIlIllllllIlIl;
-            "".length();
-            if ("   ".length() > 0) continue;
-            return null;
-        }
-        return String.valueOf(llllllllllllllIlllIIlIllllllllll);
     }
 
     @SubscribeEvent
-    public void onWorldChange(WorldEvent.Unload llllllllllllllIlllIIllIlIIIllIIl) {
-        if (BinSnipeLogic.isnAreNotZero(Wrapper.mc.func_71356_B() ? 1 : 0)) {
+    public void onWorldChange(WorldEvent.Unload worldEvent) {
+        if (Wrapper.mc.isGamePaused()) {
             return;
         }
-        String llllllllllllllIlllIIllIlIIIllIII = Wrapper.mc.func_110432_I().func_148256_e().getId().toString();
-        if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIlIIIllIII).append(".Active"))) ? 1 : 0)) {
+        String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
+        if (!Util.config().getBoolean(playerId + ".Active")) {
             return;
         }
-        if (BinSnipeLogic.isZero(Util.config().getBoolean(String.valueOf(new StringBuilder().append(llllllllllllllIlllIIllIlIIIllIII).append(".Reconnect"))) ? 1 : 0)) {
-            BinSnipeLogic llllllllllllllIlllIIllIlIIIlIlll;
-            llllllllllllllIlllIIllIlIIIlIlll.stopSnipe();
+        if (!Util.config().getBoolean(playerId + ".Reconnect")) {
+            this.stopSnipe();
             return;
         }
-        llllllllllllllIlllIIllIlIIIlIlll.isWorldChanged = 1;
+        this.isWorldChanged = true;
     }
 }

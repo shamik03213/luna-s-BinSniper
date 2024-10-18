@@ -14,16 +14,11 @@
  *  net.minecraftforge.fml.common.network.FMLNetworkEvent$ClientConnectedToServerEvent
  *  net.minecraftforge.fml.common.network.FMLNetworkEvent$ClientDisconnectionFromServerEvent
  */
-package net.tomochie.binsniper;
+package net.luna724.iloveichika.binsniper;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.Base64;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
+import net.luna724.iloveichika.binsniper.commands.CmdBinSniper;
+import net.luna724.iloveichika.binsniper.logics.BinSnipeLogic;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -31,14 +26,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
-import net.tomochie.binsniper.commands.CmdBinSniper;
-import net.tomochie.binsniper.logics.BinSnipeLogic;
-import net.tomochie.binsniper.utils.Util;
+import net.luna724.iloveichika.binsniper.utils.Util;
 
-@Mod(modid="lbs", version="1.0")
+@Mod(modid="lbs", version="1.1")
 public class Main {
     public static final /* synthetic */ String MODID = "lbs";
-    public static final /* synthetic */ String VERSION = "1.0";
+    public static final /* synthetic */ String VERSION = "1.1";
     public static /* synthetic */ KeyBinding keyBinSniper;
     private static /* synthetic */ int isWorld;
 

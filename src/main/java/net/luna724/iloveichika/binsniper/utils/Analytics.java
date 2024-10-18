@@ -1,7 +1,7 @@
 /*
  * Decompiled with CFR 0.151.
  */
-package net.tomochie.binsniper.utils;
+package net.luna724.iloveichika.binsniper.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

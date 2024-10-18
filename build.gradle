@@ -16,9 +16,9 @@ plugins {
 
 apply plugin: "net.minecraftforge.gradle.forge"
 
-group = 'net.tomochie' // 適宜変更
-version = '13.0'
-archivesBaseName = 'binsniper'
+group = 'net.luna724.iloveichika' // 適宜変更
+version = '1.1'
+archivesBaseName = 'BinSniper'
 
 sourceCompatibility = targetCompatibility = 1.8 //using java 8
 compileJava.options.encoding = "UTF-8"

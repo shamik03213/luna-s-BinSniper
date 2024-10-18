@@ -1,8 +1,8 @@
 [
 {
   "modid": "lbs",
-  "name": "Luna's BS",
-  "description": "Hypixel Skyblock BinSnipe",
+  "name": "Luna's BinSnipeer",
+  "description": "Hypixel Skyblock BinSniper",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",

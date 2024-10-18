@@ -4,7 +4,7 @@
  * Could not load the following classes:
  *  net.minecraft.client.Minecraft
  */
-package net.tomochie.binsniper.utils;
+package net.luna724.iloveichika.binsniper.utils;
 
 import net.minecraft.client.Minecraft;
 
@@ -16,7 +16,7 @@ public class Wrapper {
     }
 
     static {
-        mc = Minecraft.func_71410_x();
+        mc = Minecraft.getMinecraft();
     }
 }
 

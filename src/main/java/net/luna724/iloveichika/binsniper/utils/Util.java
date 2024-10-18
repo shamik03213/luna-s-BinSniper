@@ -7,24 +7,17 @@
  *  net.minecraft.util.EnumChatFormatting
  *  net.minecraft.util.IChatComponent
  */
-package net.tomochie.binsniper.utils;
+package net.luna724.iloveichika.binsniper.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.Base64;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
+
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.IChatComponent;
-import net.tomochie.binsniper.utils.Wrapper;
 
 public class Util {
     private static /* synthetic */ Configuration mainConfig;
@@ -55,7 +48,7 @@ public class Util {
                 config.set(playerUUID + ".Delay", 1000L);
             }
             if (!(config.contains(playerUUID + ".Reconnect"))) {
-                config.set(playerUUID + ".Reconnect", 0);
+                config.set(playerUUID + ".Reconnect", true);
             }
             if (!(config.contains(playerUUID + ".Name"))) {
                 config.set(playerUUID + ".Name", "None");
@@ -70,9 +63,9 @@ public class Util {
                 config.set(playerUUID + ".Timeout", 10000);
             }
             if (!(config.contains(playerUUID + "None"))) {
-                config.set(playerUUID + ".Message", 1);
+                config.set(playerUUID + ".Message", true);
             }
-            config.set(playerUUID + ".Message", 0);
+            config.set(playerUUID + ".Active", false);
             Util.save();
             
         }

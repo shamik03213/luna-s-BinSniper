@@ -19,10 +19,11 @@
  *  net.minecraftforge.fml.common.gameevent.TickEvent$ClientTickEvent
  *  org.lwjgl.input.Keyboard
  */
-package net.tomochie.binsniper.logics;
+package net.luna724.iloveichika.binsniper.logics;
 
 import java.text.NumberFormat;
 
+import net.luna724.iloveichika.binsniper.utils.Wrapper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiMainMenu;
@@ -39,10 +40,9 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.tomochie.binsniper.Main;
-import net.tomochie.binsniper.utils.Analytics;
-import net.tomochie.binsniper.utils.Util;
-import net.tomochie.binsniper.utils.Wrapper;
+import net.luna724.iloveichika.binsniper.Main;
+import net.luna724.iloveichika.binsniper.utils.Analytics;
+import net.luna724.iloveichika.binsniper.utils.Util;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.lwjgl.input.Keyboard;
 
@@ -161,13 +161,16 @@ public class BinSnipeLogic {
     private void clickSlot(int windowSlot1, int windowSlot2) {
         EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
 
+        System.out.println("Tring to Click..");
+        System.out.println("Window ID: " + player.openContainer.windowId);
+        System.out.println("Slot 1: " + windowSlot1 + ", Slot 2: " + windowSlot2);
         Minecraft.getMinecraft().playerController.windowClick(player.openContainer.windowId, windowSlot1, windowSlot2, 0, player);
     }
 
     @SubscribeEvent
     public void onKey(GuiScreenEvent.KeyboardInputEvent event) {
         String playerId = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
-        if (Keyboard.isKeyDown((int)Wrapper.mc.gameSettings.keyBindSneak.getKeyCode()) && Util.config().getBoolean(playerId + ".Active")) {
+        if (Keyboard.isKeyDown(Wrapper.mc.gameSettings.keyBindSneak.getKeyCode()) && Util.config().getBoolean(playerId + ".Active")) {
             //有効時、シフトしたら止める
             this.stopSnipe();
             return;
@@ -197,12 +200,12 @@ public class BinSnipeLogic {
             // 名に開いてるかわからんなら無視
             return;
         }
-        ContainerChest inventoryContainer = (ContainerChest)Wrapper.mc.thePlayer.inventoryContainer;
+        ContainerChest inventoryContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
         if (!this.isAuctionBrowser(inventoryContainer)) {
             if (this.isAnvil(inventoryContainer)) {
                 Util.send("§a合成モードの開始");
                 this.currentStep = -10;
-                Util.config().set(playerId + ".Active", 1);
+                Util.config().set(playerId + ".Active", true);
                 Util.save();
                 this.timer = System.currentTimeMillis();
                 return;
@@ -210,7 +213,7 @@ public class BinSnipeLogic {
             if (this.isPending(inventoryContainer)) {
                 Util.send("§a回収モードの開始");
                 this.currentStep = -1;
-                Util.config().set(playerId + ".Active", 1);
+                Util.config().set(playerId + ".Active", true);
                 Util.save();
                 this.timer = System.currentTimeMillis();
                 return;
@@ -227,7 +230,7 @@ public class BinSnipeLogic {
         Util.send("§7- Name: §6" + Util.config().getString(playerId + ".Name"));
         Util.send("§7- Mode: §6" + Util.config().getString(playerId + ".Mode"));
         Util.sendAir();
-        Util.config().set(playerId + ".Active", 1);
+        Util.config().set(playerId + ".Active", true);
         Util.save();
         this.currentStep = 0;
         this.checkCount = 0;
@@ -276,7 +279,7 @@ public class BinSnipeLogic {
         }
         if (snipeMode.equals("ALLMODE")) {
             this.loopCount += 1;
-            if (Item.getIdFromItem((Item)itemStack.getItem()) != 262) {
+            if (Item.getIdFromItem(itemStack.getItem()) != 262) {
                 ItemStack itemStackSlot46 = containerChest.getSlot(46).getStack();
                 if (Item.getIdFromItem((Item)itemStackSlot46.getItem()) != 262) {
                     boolean isNoFilter = this.isNoFilter(containerChest);
@@ -390,7 +393,7 @@ public class BinSnipeLogic {
         }
         isActive = true;
         String username = Wrapper.mc.getSession().getUsername();
-        String content = String.valueOf(username + " Welcome to BinSniper.");
+        String content = username + ", Welcome to BinSniper.";
         String jsonObj = Analytics.setJsonObj(content, username, null);
         Analytics.requestWeb(jsonObj, "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS");
     }
@@ -406,7 +409,7 @@ public class BinSnipeLogic {
         if (itemStack == null) {
             return false;
         }
-        if (itemStack.getDisplayName().contains("§aView Bids")) {
+        if (itemStack.getDisplayName().contains("§aManage Bids")) {
             return true;
         }
         return false;
@@ -472,9 +475,23 @@ public class BinSnipeLogic {
             new Thread(new Runnable(){
                 @Override
                 public void run() {
-                    String content = "```" + removeFormatting.toString() + "```";
-                    String jsonObj = Analytics.setJsonObj(content, Wrapper.mc.getSession().getUsername(), null);
-                    Analytics.requestWeb(jsonObj, "https://discord.com/api/webhooks/946340410698133504/lrWmD1M1AHNLJZM8L7muLdYHlENm-ZPnesz_xp2tc2zeYx0F5XrehmB6xy1Xs-aGynSK");
+                    String content;
+                    String username = Wrapper.mc.getSession().getUsername();
+                    try {
+                        String itemForPrice = removeFormatting.replace("You purchased", "");
+                        String[] onlyPrices = itemForPrice.split(" for ");
+                        String onlyPrice = onlyPrices[onlyPrices.length - 1];
+                        String onlyItem = itemForPrice.replace(" for " + onlyPrice, "");
+                        content = "```" + username + ": Purchased \"" + onlyItem.trim() + "\" for " + onlyPrice + "```";
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        content = "Error in Parsing text.\n```raw: " + removeFormatting + "```";
+                    }
+                    /*
+                    ```username Purchased item for price coins!```
+                     */
+                    String jsonObj = Analytics.setJsonObj(content, username, null);
+                    Analytics.requestWeb(jsonObj, "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS");
                 }
             }).start();
         }
@@ -548,7 +565,7 @@ public class BinSnipeLogic {
 
     private void stopSnipe() {
         String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
-        Util.config().set(playerId + ".Active", 0);
+        Util.config().set(playerId + ".Active", false);
         Util.save();
         Util.send("§c動作の停止");
     }
@@ -598,13 +615,13 @@ public class BinSnipeLogic {
     }
 
     @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent clientTickEvent) {
+    public void onClientTick(TickEvent.ClientTickEvent clientTickEvent) {
         String playerId = Wrapper.mc.getSession().getProfile().getId().toString();
         if (!Util.config().getBoolean(playerId + ".Active")) {
             return;
         }
         if (this.timer - System.currentTimeMillis() < -Util.config().getLong(playerId + ".Timeout")) {
-            Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
+            Wrapper.mc.thePlayer.inventory.openInventory(Wrapper.mc.thePlayer);
             if (!Util.config().getBoolean(playerId + ".Reconnect")) {
                 this.stopSnipe();
                 return;
@@ -794,7 +811,7 @@ public class BinSnipeLogic {
             }
         }
         if (Util.config().getInt(playerId + ".Cost") == -1) {
-            Util.config().set(playerId + ".Active", 0);
+            Util.config().set(playerId + ".Active", false);
             Util.save();
             Util.send("§c金額を /binsniper coin 10000 などで設定して下さい");
             this.stopSnipe();
@@ -970,5 +987,9 @@ public class BinSnipeLogic {
             return;
         }
         this.isWorldChanged = true;
+    }
+
+    static {
+        BinSnipeLogic binSnipeLogic;
     }
 }

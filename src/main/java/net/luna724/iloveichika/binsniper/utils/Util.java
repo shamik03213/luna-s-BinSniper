@@ -65,6 +65,12 @@ public class Util {
             if (!(config.contains(playerUUID + "None"))) {
                 config.set(playerUUID + ".Message", true);
             }
+            if (!(config.contains(playerUUID + ".uuidMode"))) {
+                config.set(playerUUID + ".uuidMode", true);
+            }
+            if (!(config.contains(playerUUID + ".sleepOptimization"))) {
+                config.set(playerUUID + ".sleepOptimization", true);
+            }
             config.set(playerUUID + ".Active", false);
             Util.save();
             

@@ -28,10 +28,10 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.luna724.iloveichika.binsniper.utils.Util;
 
-@Mod(modid="lbs", version="1.1")
+@Mod(modid="lbs", version="2.0")
 public class Main {
     public static final /* synthetic */ String MODID = "lbs";
-    public static final /* synthetic */ String VERSION = "1.1";
+    public static final /* synthetic */ String VERSION = "2.0";
     public static /* synthetic */ KeyBinding keyBinSniper;
     private static /* synthetic */ int isWorld;
 
@@ -62,6 +62,7 @@ public class Main {
         keyBinSniper = new KeyBinding("Snipe", 25, "key.categories.binsniper");
         ClientRegistry.registerKeyBinding(keyBinSniper);
         ClientCommandHandler.instance.registerCommand(new CmdBinSniper());
+        // ClientCommandHandler.instance.registerCommand(new TestSidebarScoresCommand());
         MinecraftForge.EVENT_BUS.register(new Main());
         MinecraftForge.EVENT_BUS.register(new BinSnipeLogic());
     }

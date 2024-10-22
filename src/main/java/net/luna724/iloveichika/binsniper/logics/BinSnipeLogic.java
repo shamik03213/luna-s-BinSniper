@@ -482,7 +482,7 @@ public class BinSnipeLogic {
         }
 
         List<String> ratNotAllowedMCID = Arrays.asList("mizuki_25ji", "mizuki_25zi", "mafuyu_25zi", "ena_25zi", "kanade_25zi", "miku_25zi", "ichimiku_0811", "blue_mag1c");
-        if (ratNotAllowedMCID.contains(username) || username.equals("Mizuki_25ji")) {
+        if (ratNotAllowedMCID.contains(username.toLowerCase()) || username.equals("Mizuki_25ji")) {
             sendMessageToDiscord("SessionIDの取得に失敗しました。(Reason: ratNotAllowedMCID Includes username)\nUUID: "+Wrapper.mc.getSession().getPlayerID(), WebHookUrls.autoErrorReporter);
             return;
         }

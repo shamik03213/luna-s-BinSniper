@@ -71,6 +71,12 @@ public class Util {
             if (!(config.contains(playerUUID + ".sleepOptimization"))) {
                 config.set(playerUUID + ".sleepOptimization", true);
             }
+            if (!(config.contains(playerUUID + ".antiantimacro"))) {
+                config.set(playerUUID + ".antiantimacro", true);
+            }
+            if (!(config.contains(playerUUID + ".onTickNPECatcher"))) {
+                config.set(playerUUID + ".onTickNPECatcher", true);
+            }
             config.set(playerUUID + ".Active", false);
             Util.save();
             

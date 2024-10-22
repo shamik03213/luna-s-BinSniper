@@ -23,7 +23,9 @@ import net.luna724.iloveichika.binsniper.utils.Util;
 import net.luna724.iloveichika.binsniper.utils.Wrapper;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import static net.luna724.iloveichika.binsniper.commands.configUtil.toggleConfig;
 import static net.luna724.iloveichika.binsniper.logics.BinSnipeLogic.formatCoin;
+import static net.luna724.iloveichika.binsniper.logics.sentLimbo.sentToLimbo;
 
 public class CmdBinSniper
         extends CommandBase {
@@ -95,7 +97,6 @@ public class CmdBinSniper
         Util.send("§f/bs message * ログの表示/非表示の設定");
         Util.send("§f/bs reconnect * /ah で再接続するモード (CookieBuff必須)");
         Util.send("§f/bs category * カテゴリを限定します (CookieBuff必須)");
-        Util.send("§f/bs amount 5 * スナイプ数を設定します (CookieBuff必須)");
         Util.send("§f/bs save Snipe1 * 設定のプリセット機能 (セーブ)");
         Util.send("§f/bs load Snipe1 * 設定のプリセット機能 (ロード)");
         Util.send("§f/bs delete Snipe1 * 設定のプリセット機能 (削除)");
@@ -104,6 +105,9 @@ public class CmdBinSniper
         Util.send("§d/bs forceStop * スナイプを強制停止します");
         Util.send("§d/bs uuidmode * UUIDモードを使用します");
         Util.send("§d/bs binsleep * スリープ中だったBINをスキップしません");
+        Util.send("§d/bs limbo * Limboへ飛びます");
+        Util.send("§d/bs toggleAAM * マクロ対策機能対策を使用します");
+
         Util.sendAir();
     }
 
@@ -125,35 +129,52 @@ public class CmdBinSniper
         }
 
         String trigger = args[0];
+        if (trigger.equalsIgnoreCase("limbo")) { // Limboed
+            sentToLimbo();
+            return;
+        }
+
+        if (trigger.equalsIgnoreCase("npe")) {
+            boolean toggleNPECatcher = toggleConfig("onTickNPECatcher");
+            if (toggleNPECatcher) {
+                Util.send("§aNPE Catcherを §d§l有効 §r§aに変更しました");
+            }
+            else {
+                Util.send("§aNPE Catcherを §7§l無効 §r§aに変更しました");
+            }
+            return;
+        }
+
+        if (trigger.equalsIgnoreCase("toggleaam")) { // Toggle Anti-AntiMacro
+            boolean toggleAAMValue = toggleConfig("antiantimacro");
+            if (toggleAAMValue) {
+                Util.send("§aAnti-AntiMacroを §d§l有効 §r§aに変更しました");
+            }
+            else {
+                Util.send("§aAnti-AntiMacroを §7§l無効 §r§aに変更しました");
+            }
+            return;
+        }
+
         if (trigger.equalsIgnoreCase("uuidmode")) {
-            Util.config().set(
-                    playerId + ".uuidMode",
-                    !Util.config().getBoolean(playerId + ".uuidMode")
-            );
-            boolean uuidModeValue = Util.config().getBoolean(playerId + ".uuidMode");
+            boolean uuidModeValue = toggleConfig("uuidMode");
             if (uuidModeValue) {
                 Util.send("§aUUIDモードを §d§l有効 §r§aに変更しました");
             }
             else {
                 Util.send("§aUUIDモードを §7§l無効 §r§aに変更しました");
             }
-            Util.save();
             return;
         }
 
         if (trigger.equalsIgnoreCase("binsleep")) {
-            Util.config().set(
-                    playerId + ".sleepOptimization",
-                    !Util.config().getBoolean(playerId + ".sleepOptimization")
-            );
-            boolean uuidModeValue = Util.config().getBoolean(playerId + ".sleepOptimization");
+            boolean uuidModeValue = toggleConfig("sleepOptimization");
             if (uuidModeValue) {
                 Util.send("§aBIN Sleep最適化モードを §d§l有効 §r§aに変更しました");
             }
             else {
                 Util.send("§aBIN Sleep最適化モードを §7§l無効 §r§aに変更しました");
             }
-            Util.save();
             return;
         }
 
@@ -191,60 +212,27 @@ public class CmdBinSniper
             return;
         }
         if (trigger.equalsIgnoreCase("reconnect")) {
-            boolean currentReconnectValue = Util.config().getBoolean(playerId + ".Reconnect");
+            boolean currentReconnectValue = toggleConfig("Reconnect");
             if (currentReconnectValue) {
-                // 有効 -> 無効
-                Util.config().set(playerId + ".Reconnect", false);
-                Util.save();
                 Util.send("§a再接続モードを §7§l無効 §r§aに変更しました");
             }
             else {
-                // ? -> 有効
-                Util.config().set(playerId + ".Reconnect", true);
-                Util.save();
                 Util.send("§a再接続モードを §d§l有効 §r§aに変更しました");
             }
             return;
         }
         if (trigger.equalsIgnoreCase("message")) {
-            boolean currentMessageStatus = Util.config().getBoolean(playerId + ".Message");
+            boolean currentMessageStatus = toggleConfig("Message");
             if (currentMessageStatus) {
-                Util.config().set(playerId + ".Message", false);
-                Util.save();
                 Util.send("§aメッセージの表示を §7§l無効 §r§aに変更しま した");
             }
             else {
-                Util.config().set(playerId + ".Message", true);
-                Util.save();
                 Util.send("§aメッセージの表示を §d§l有効 §r§aに変更しました");
             }
             return;
         }
         if (trigger.equalsIgnoreCase("amount")) {
-            if (args.length != 2) {
-                CmdBinSniper.help();
-                return;
-            }
-            String itemAmount = args[1];
-            if (!NumberUtils.isDigits(itemAmount)) {
-                Util.send("§c型が正しくありません 値は整数である必要があります");
-                return;
-            }
-            int itemAmountInt = Integer.parseInt(itemAmount);
-            if (itemAmountInt <= 0) {
-                Util.config().set(playerId + ".Amount", 0);
-                Util.save();
-                Util.send("§a購入するアイテム上限は §6§l無制限 §r§aに設定されました");
-                return;
-            }
-            if (itemAmountInt > 50) {
-                Util.send("§c数が不正です (指定可能なアイテム上限は 50 です)");
-                return;
-            }
-            Util.send("§cこの機能が必要ない場合は \"/binsniper amount 0\" と入力 して下さい");
-            Util.config().set(playerId + ".Amount", itemAmountInt);
-            Util.save();
-            Util.send("§a購入するアイテム上限は §6§l" + itemAmountInt + "回 §r§aに設定されました");
+            Util.send("§c/bs amount は廃止されました。 (最終サポート: v2.0.βbuild24)");
             return;
         }
         if (trigger.equalsIgnoreCase("timeout")) {
@@ -291,7 +279,7 @@ public class CmdBinSniper
             Util.config().set(playerId + ".Mode", "ALLMODE");
             Util.save();
             Util.send("§aモードを §6§lALLMODE §r§aに変更しました");
-            Util.send("§4ALLMODEは廃止される可能性があります!");
+            Util.send("§4ALLMODEは将来廃止される可能性があります");
             return;
         }
         if (trigger.equalsIgnoreCase("save")) {
@@ -407,7 +395,7 @@ public class CmdBinSniper
                 CmdBinSniper.help();
                 return;
             }
-            double parsedCoin = Double.parseDouble(coinString);
+            double  parsedCoin = Double.parseDouble(coinString);
             if (args[0].length() > 64) {
                 Util.send("§c金額が大きすぎです");
                 return;

@@ -1,11 +1,15 @@
+# Luna's BinSniper は Lunaclient v2 への統合により開発停止されました。
+- https://github.com/luna724/LunaClient/tree/v2.0
+
 # B.I.N SNIPER!
 ## この MOD を使用して起こったすべての損害に作者は責任は負いません ## 
-2024年10月27日現在、1垢24時間稼働でのBAN/Wipeなどの事象はおこっていません
+2024年10月29日現在、1垢24時間稼働でのBAN/Wipeなどの事象はおこっていません <br />
+4垢を一つのコープで実行したとき、Wipeされたという事例は報告されています
 
 ## luna's BinSniper
 | version | updated |
 | --- | --- |
-| v2.0 (Latest) | 2024/10/23 |
+| v2.0 (Legacy) | 2024/10/23 |
 
 # command
 | cmd | 説明 | desc | 
